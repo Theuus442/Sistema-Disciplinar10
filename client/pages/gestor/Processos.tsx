@@ -99,7 +99,7 @@ export default function ProcessosPage() {
   ];
 
   const filtrados = useMemo<ProcessoItem[]>(() => {
-    return processosMock.filter((p) => {
+    return processes.filter((p) => {
       const buscaOk =
         busca.trim().length === 0 ||
         p.funcionario.toLowerCase().includes(busca.toLowerCase()) ||
