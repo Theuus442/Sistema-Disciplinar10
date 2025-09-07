@@ -55,7 +55,7 @@ export default function UsuariosAdminPage() {
     const channel = supabase
       .channel("profiles-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
-        fetchUsers().then((list) => setUsuarios(list as any)).catch(() => {});
+        carregarUsuarios().catch(() => {});
       })
       .subscribe();
     return () => {
