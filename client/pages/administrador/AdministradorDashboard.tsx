@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 export default function AdministradorDashboard() {
   return (
     <div className="min-h-screen bg-sis-bg-light">

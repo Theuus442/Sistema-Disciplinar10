@@ -6,12 +6,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import NaoEncontrado from "./pages/NaoEncontrado";
-import GestorDashboard from "./pages/GestorDashboard";
-import AdministradorDashboard from "./pages/AdministradorDashboard";
-import JuridicoDashboard from "./pages/JuridicoDashboard";
-import GestorRegistrarDesvio from "./pages/GestorRegistrarDesvio";
+import Login from "./pages/autenticacao/Login";
+import NaoEncontrado from "./pages/erros/NaoEncontrado";
+import GestorDashboard from "./pages/gestor/GestorDashboard";
+import AdministradorDashboard from "./pages/administrador/AdministradorDashboard";
+import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
+import GestorRegistrarDesvio from "./pages/gestor/GestorRegistrarDesvio";
 
 const queryClient = new QueryClient();
 

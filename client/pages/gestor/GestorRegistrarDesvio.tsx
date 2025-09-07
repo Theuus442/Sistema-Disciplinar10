@@ -1,6 +1,6 @@
-import { useState } from "react";
-import Header from "../components/Header";
-import Sidebar from "../components/Sidebar";
+import { useState, type FormEvent, type ChangeEvent } from "react";
+import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
 import { toast } from "sonner";
 
 export default function GestorRegistrarDesvio() {
@@ -19,7 +19,7 @@ export default function GestorRegistrarDesvio() {
     "Carlos Santos",
   ];
 
-  const enviarFormulario = (e: React.FormEvent) => {
+  const enviarFormulario = (e: FormEvent) => {
     e.preventDefault();
 
     if (!funcionario || !dataOcorrencia || !tipoDesvio || !classificacao || !descricao) {
@@ -47,7 +47,7 @@ export default function GestorRegistrarDesvio() {
     setAnexos([]);
   };
 
-  const onChangeArquivos = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onChangeArquivos = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setAnexos(files);
   };

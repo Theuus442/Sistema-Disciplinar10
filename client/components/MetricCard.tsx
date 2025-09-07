@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
+
 interface MetricCardProps {
   titulo: string;
   valor: string;
   descricao: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }
 
 export default function MetricCard({ titulo, valor, descricao, icon }: MetricCardProps) {

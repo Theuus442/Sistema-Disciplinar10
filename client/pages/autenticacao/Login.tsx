@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 export default function Login() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
 
-  const enviarLogin = (e: React.FormEvent) => {
+  const enviarLogin = (e: FormEvent) => {
     e.preventDefault();
     console.log("Tentativa de login:", { usuario, senha });
   };

@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 export default function JuridicoDashboard() {
   return (
     <div className="min-h-screen bg-sis-bg-light">

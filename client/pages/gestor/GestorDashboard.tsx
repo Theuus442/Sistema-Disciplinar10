@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../components/Header";
-import Sidebar from "../components/Sidebar";
-import MetricCard from "../components/MetricCard";
-import TabelaProcessos from "../components/TabelaProcessos";
+import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import MetricCard from "@/components/MetricCard";
+import TabelaProcessos from "@/components/TabelaProcessos";
 
 export default function GestorDashboard() {
   const navigate = useNavigate();
