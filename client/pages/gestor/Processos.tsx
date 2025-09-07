@@ -57,6 +57,19 @@ const getStatusClasses = (s: StatusAtual) => {
 export default function ProcessosPage() {
   const navigate = useNavigate();
   const [busca, setBusca] = useState("");
+  const [processes, setProcesses] = useState<ProcessoItem[]>(processosMock);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchProcesses()
+      .then((data) => {
+        if (mounted && data) setProcesses(data as any);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
   const [filtroClassificacao, setFiltroClassificacao] =
     useState<Classificacao | "todas">("todas");
