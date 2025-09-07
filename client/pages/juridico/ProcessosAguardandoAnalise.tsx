@@ -7,11 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { legalCasesAwaitingMock, type LegalReviewStatus } from "@/data/legal";
+import { fetchProcesses } from "@/lib/api";
 
-function getLegalStatusClasses(s: LegalReviewStatus) {
+type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
+type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
+function getStatusClasses(s: StatusAtual) {
   switch (s) {
-    case "Aguardando Parecer Jurídico":
+    case "Em Análise":
       return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
     case "Em Revisão":
       return "bg-status-blue-bg border-status-blue-border text-status-blue-text";
@@ -23,21 +25,28 @@ function getLegalStatusClasses(s: LegalReviewStatus) {
 export default function ProcessosAguardandoAnalise() {
   const navegar = useNavigate();
   const [busca, setBusca] = useState("");
+  const [processos, setProcessos] = useState<{ id: string; funcionario: string; tipoDesvio: string; classificacao: Classificacao; dataAbertura: string; status: StatusAtual; }[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchProcesses().then((data) => {
+      if (mounted) setProcessos((data as any) || []);
+    });
+    return () => { mounted = false; };
+  }, []);
 
   const itens = useMemo(() => {
-    const somenteAguardando = legalCasesAwaitingMock.filter(
-      (c) => c.status === "Aguardando Parecer Jurídico",
-    );
-    if (!busca.trim()) return somenteAguardando;
+    const aguardando = processos.filter((c) => c.status === "Sindicância");
+    if (!busca.trim()) return aguardando;
     const q = busca.toLowerCase();
-    return somenteAguardando.filter(
+    return aguardando.filter(
       (c) =>
         c.id.toLowerCase().includes(q) ||
-        c.employeeName.toLowerCase().includes(q) ||
-        c.deviationType.toLowerCase().includes(q) ||
-        c.classification.toLowerCase().includes(q),
+        c.funcionario.toLowerCase().includes(q) ||
+        c.tipoDesvio.toLowerCase().includes(q) ||
+        (c.classificacao as string).toLowerCase().includes(q),
     );
-  }, [busca]);
+  }, [busca, processos]);
 
   const aoSair = () => {
     window.location.href = "/";
@@ -97,12 +106,12 @@ export default function ProcessosAguardandoAnalise() {
                               {c.id}
                             </button>
                           </TableCell>
-                          <TableCell className="truncate">{c.employeeName}</TableCell>
-                          <TableCell className="truncate">{c.deviationType}</TableCell>
-                          <TableCell>{c.classification}</TableCell>
-                          <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+                          <TableCell className="truncate">{c.funcionario}</TableCell>
+                          <TableCell className="truncate">{c.tipoDesvio}</TableCell>
+                          <TableCell>{c.classificacao}</TableCell>
+                          <TableCell className="text-sis-secondary-text">{c.dataAbertura}</TableCell>
                           <TableCell>
-                            <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+                            <Badge className={`border ${getStatusClasses(c.status)}`}>{c.status}</Badge>
                           </TableCell>
                           <TableCell>
                             <Button size="sm" onClick={() => navegar(`/juridico/processos/${c.id}`)}>
