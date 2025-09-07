@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import SidebarJuridico from "@/components/SidebarJuridico";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { legalCasesAwaitingMock, type LegalReviewStatus } from "@/data/legal";
+import { fetchProcesses } from "@/lib/api";
 import {
   PieChart,
   Pie,
@@ -24,21 +24,26 @@ import {
 } from "recharts";
 import { FileText, Clock, CheckCircle2, PieChart as PieChartIcon, BarChart3, Calendar, Search, Download } from "lucide-react";
 
-function getLegalStatusClasses(s: LegalReviewStatus) {
+type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
+type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
+function getStatusClasses(s: StatusAtual) {
   switch (s) {
-    case "Aguardando Parecer Jurídico":
+    case "Em Análise":
       return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
-    case "Em Revisão":
+    case "Sindicância":
       return "bg-status-blue-bg border-status-blue-border text-status-blue-text";
+    case "Aguardando Assinatura":
+      return "bg-status-purple-bg border-status-purple-border text-status-purple-text";
     case "Finalizado":
       return "bg-status-green-bg border-status-green-border text-status-green-text";
   }
 }
 
-const statusOpcoes: ("todos" | LegalReviewStatus)[] = [
+const statusOpcoes: ("todos" | StatusAtual)[] = [
   "todos",
-  "Aguardando Parecer Jurídico",
-  "Em Revisão",
+  "Em Análise",
+  "Sindicância",
+  "Aguardando Assinatura",
   "Finalizado",
 ];
 
@@ -49,31 +54,41 @@ export default function Relatorios() {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
+  const [processos, setProcessos] = useState<{ id: string; funcionario: string; tipoDesvio: string; classificacao: Classificacao; dataAbertura: string; status: StatusAtual; resolucao?: string }[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchProcesses().then((data) => {
+      if (mounted) setProcessos((data as any) || []);
+    });
+    return () => { mounted = false; };
+  }, []);
+
   const dados = useMemo(() => {
-    const base = legalCasesAwaitingMock;
+    const base = processos;
     const porStatus = statusFiltro === "todos" ? base : base.filter((c) => c.status === statusFiltro);
     const porBusca = !busca.trim()
       ? porStatus
       : porStatus.filter(
           (c) =>
             c.id.toLowerCase().includes(busca.toLowerCase()) ||
-            c.employeeName.toLowerCase().includes(busca.toLowerCase()) ||
-            c.deviationType.toLowerCase().includes(busca.toLowerCase()) ||
-            c.classification.toLowerCase().includes(busca.toLowerCase()),
+            c.funcionario.toLowerCase().includes(busca.toLowerCase()) ||
+            c.tipoDesvio.toLowerCase().includes(busca.toLowerCase()) ||
+            (c.classificacao as string).toLowerCase().includes(busca.toLowerCase()),
         );
     const porPeriodo = porBusca.filter((c) => {
-      const d = new Date(c.referralDate);
+      const d = new Date(c.dataAbertura);
       const okInicio = dataInicio ? d >= new Date(dataInicio) : true;
       const okFim = dataFim ? d <= new Date(dataFim) : true;
       return okInicio && okFim;
     });
     return porPeriodo;
-  }, [busca, statusFiltro, dataInicio, dataFim]);
+  }, [busca, statusFiltro, dataInicio, dataFim, processos]);
 
   const metricas = useMemo(() => {
     const total = dados.length;
-    const aguardando = dados.filter((d) => d.status === "Aguardando Parecer Jurídico").length;
-    const revisao = dados.filter((d) => d.status === "Em Revisão").length;
+    const aguardando = dados.filter((d) => d.status === "Em Análise").length;
+    const revisao = dados.filter((d) => d.status === "Sindicância").length;
     const finalizado = dados.filter((d) => d.status === "Finalizado").length;
     return { total, aguardando, revisao, finalizado };
   }, [dados]);
@@ -90,7 +105,8 @@ export default function Relatorios() {
   const distribuicaoClassificacao = useMemo(() => {
     const mapa = new Map<string, number>();
     dados.forEach((d) => {
-      mapa.set(d.classification, (mapa.get(d.classification) || 0) + 1);
+      const cls = d.classificacao as string;
+      mapa.set(cls, (mapa.get(cls) || 0) + 1);
     });
     return Array.from(mapa.entries()).map(([name, value]) => ({ name, value }));
   }, [dados]);
@@ -112,14 +128,14 @@ export default function Relatorios() {
     ];
     const linhas = dados.map((d) => [
       d.id,
-      d.employeeName,
-      d.deviationType,
-      d.classification,
-      d.referralDate,
+      d.funcionario,
+      d.tipoDesvio,
+      d.classificacao,
+      d.dataAbertura,
       d.status,
-      d.legalDecisionResult ?? "",
-      d.legalDecisionMeasure ?? "",
-      d.decisionDate ?? "",
+      d.status,
+      d.resolucao ?? "",
+      d.dataAbertura,
     ]);
     const csv = [cabecalho, ...linhas]
       .map((r) => r.map((c) => `"${String(c).replace(/\"/g, '""')}"`).join(","))
@@ -306,7 +322,7 @@ export default function Relatorios() {
                         <TableHead className="w-[20%]">Funcionário</TableHead>
                         <TableHead className="w-[18%]">Tipo de Desvio</TableHead>
                         <TableHead className="w-[14%]">Classificação</TableHead>
-                        <TableHead className="w-[16%]">Data de Encaminhamento</TableHead>
+                        <TableHead className="w-[16%]">Data de Abertura</TableHead>
                         <TableHead className="w-[10%]">Status</TableHead>
                         <TableHead className="w-[8%]">Ação</TableHead>
                       </TableRow>
@@ -322,12 +338,12 @@ export default function Relatorios() {
                         dados.map((c) => (
                           <TableRow key={c.id} className="hover:bg-gray-50">
                             <TableCell className="font-medium">{c.id}</TableCell>
-                            <TableCell className="truncate">{c.employeeName}</TableCell>
-                            <TableCell className="truncate">{c.deviationType}</TableCell>
-                            <TableCell>{c.classification}</TableCell>
-                            <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+                            <TableCell className="truncate">{c.funcionario}</TableCell>
+                            <TableCell className="truncate">{c.tipoDesvio}</TableCell>
+                            <TableCell>{c.classificacao}</TableCell>
+                            <TableCell className="text-sis-secondary-text">{c.dataAbertura}</TableCell>
                             <TableCell>
-                              <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+                              <Badge className={`border ${getStatusClasses(c.status)}`}>{c.status}</Badge>
                             </TableCell>
                             <TableCell>
                               <Button size="sm" onClick={() => navegar(`/juridico/processos/${c.id}`)}>Abrir</Button>

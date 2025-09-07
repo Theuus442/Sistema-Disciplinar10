@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import SidebarAdministrador from "@/components/SidebarAdministrador";
-import { usuariosMock, type Usuario, type PerfilUsuario } from "@/data/usuarios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,19 +12,29 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { fetchUsers, updateProfile, type PerfilUsuario } from "@/lib/api";
 
 export default function UsuariosAdminPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  type Usuario = { id: string; nome: string; email: string; perfil: PerfilUsuario; ativo: boolean; criadoEm?: string; ultimoAcesso?: string | null };
   const [busca, setBusca] = useState("");
-  const [usuarios, setUsuarios] = useState<Usuario[]>(usuariosMock);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [abrirNovo, setAbrirNovo] = useState(false);
-  const [novo, setNovo] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
+  const [novo, setNovo] = useState<{ nome: string; email: string; password: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
 
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
   const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
+
+  useEffect(() => {
+    let mounted = true;
+    fetchUsers()
+      .then((list) => { if (mounted) setUsuarios(list as any); })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -33,18 +42,54 @@ export default function UsuariosAdminPage() {
     return usuarios.filter((u) => [u.nome, u.email, u.id, u.perfil].join(" ").toLowerCase().includes(q));
   }, [busca, usuarios]);
 
-  const alternarAtivo = (id: string, ativo: boolean) => {
+  const alternarAtivo = async (id: string, ativo: boolean) => {
+    const old = usuarios;
     setUsuarios((prev) => prev.map((u) => (u.id === id ? { ...u, ativo } : u)));
-    toast({ title: ativo ? "Usuário ativado" : "Usuário desativado" });
+    try {
+      await updateProfile(id, { ativo });
+      toast({ title: ativo ? "Usuário ativado" : "Usuário desativado" });
+    } catch (e: any) {
+      setUsuarios(old);
+      toast({ title: "Erro ao atualizar status", description: e?.message || String(e) });
+    }
   };
 
-  const criarUsuario = () => {
-    const id = `USR-${String(usuarios.length + 1).padStart(3, "0")}`;
-    const novoUsuario: Usuario = { id, nome: novo.nome, email: novo.email, perfil: novo.perfil, ativo: novo.ativo, criadoEm: new Date().toISOString() };
-    setUsuarios((prev) => [novoUsuario, ...prev]);
-    setAbrirNovo(false);
-    setNovo({ nome: "", email: "", perfil: "funcionario", ativo: true });
-    toast({ title: "Usuário criado", description: `${novoUsuario.nome} (${novoUsuario.perfil})` });
+  const criarUsuario = async () => {
+    if (!novo.nome || !novo.email || !novo.password || novo.password.length < 6) {
+      toast({ title: "Preencha nome, e-mail e senha (mín. 6)" });
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: novo.nome, email: novo.email, password: novo.password, perfil: novo.perfil, ativo: novo.ativo }),
+      });
+
+      let payload: any = null;
+      let fallbackText: string | null = null;
+      try {
+        payload = await res.clone().json();
+      } catch {}
+      if (!payload) {
+        try {
+          fallbackText = await res.text();
+        } catch {}
+      }
+
+      if (!res.ok) {
+        const msg = (payload && (payload.error || payload.message)) || fallbackText || `${res.status} ${res.statusText}`;
+        throw new Error(msg);
+      }
+
+      const data = payload ?? {};
+      setUsuarios((prev) => [data as any, ...prev]);
+      setAbrirNovo(false);
+      setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
+      toast({ title: "Usuário criado", description: `${data.nome} (${data.perfil})` });
+    } catch (e: any) {
+      toast({ title: "Erro ao criar usuário", description: e?.message || String(e) });
+    }
   };
 
   const handleSair = () => navigate("/");
@@ -55,11 +100,20 @@ export default function UsuariosAdminPage() {
     setAbrirEditar(true);
   };
 
-  const salvarEdicao = () => {
+  const salvarEdicao = async () => {
     if (!alvoEdicao) return;
-    setUsuarios((prev) => prev.map((u) => (u.id === alvoEdicao.id ? { ...u, nome: edicao.nome, email: edicao.email, perfil: edicao.perfil, ativo: edicao.ativo } : u)));
-    setAbrirEditar(false);
-    toast({ title: "Usuário atualizado", description: edicao.nome });
+    const id = alvoEdicao.id;
+    const patch = { nome: edicao.nome, perfil: edicao.perfil, ativo: edicao.ativo };
+    const old = usuarios;
+    setUsuarios((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
+    try {
+      await updateProfile(id, patch);
+      setAbrirEditar(false);
+      toast({ title: "Usuário atualizado", description: edicao.nome });
+    } catch (e: any) {
+      setUsuarios(old);
+      toast({ title: "Erro ao salvar", description: e?.message || String(e) });
+    }
   };
 
   return (
@@ -71,7 +125,7 @@ export default function UsuariosAdminPage() {
           <div className="mx-auto max-w-7xl space-y-6">
             <div>
               <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Gerenciamento de Usuários</h1>
-              <p className="font-roboto text-sm text-sis-secondary-text">Administre perfis, status de acesso e cadastre novos usuários.</p>
+              <p className="font-roboto text-sm text-sis-secondary-text">Administre perfis, status de acesso e cadastre novos usu��rios.</p>
             </div>
 
             <Card className="border-sis-border bg-white">
@@ -96,6 +150,10 @@ export default function UsuariosAdminPage() {
                       <div>
                         <Label>E-mail</Label>
                         <Input type="email" value={novo.email} onChange={(e) => setNovo({ ...novo, email: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Senha (mín. 6)</Label>
+                        <Input type="password" value={novo.password} onChange={(e) => setNovo({ ...novo, password: e.target.value })} />
                       </div>
                       <div>
                         <Label>Perfil</Label>

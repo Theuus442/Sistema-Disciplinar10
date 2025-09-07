@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
@@ -20,13 +20,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  processosMock,
-  type ProcessoItem,
-  type Classificacao,
-  type StatusAtual,
-} from "@/data/processos";
 import { fetchProcesses } from "@/lib/api";
+
+type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
+type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
+type ProcessoItem = {
+  id: string;
+  funcionario: string;
+  tipoDesvio: string;
+  classificacao: Classificacao;
+  dataAbertura: string;
+  status: StatusAtual;
+};
 
 const getClassificacaoClasses = (c: Classificacao) => {
   switch (c) {
@@ -57,7 +62,7 @@ const getStatusClasses = (s: StatusAtual) => {
 export default function ProcessosPage() {
   const navigate = useNavigate();
   const [busca, setBusca] = useState("");
-  const [processes, setProcesses] = useState<ProcessoItem[]>(processosMock);
+  const [processes, setProcesses] = useState<ProcessoItem[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -141,7 +146,7 @@ export default function ProcessosPage() {
             <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4">
               <div className="md:col-span-2">
                 <Input
-                  placeholder="Buscar por funcionário ou ID do processo"
+                  placeholder="Buscar por funcion��rio ou ID do processo"
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                 />

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import SidebarJuridico from "@/components/SidebarJuridico";
@@ -8,23 +8,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { legalCasesAwaitingMock, type LegalReviewStatus } from "@/data/legal";
+import { fetchProcesses } from "@/lib/api";
 
-function getLegalStatusClasses(s: LegalReviewStatus) {
+type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
+type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
+function getStatusClasses(s: StatusAtual) {
   switch (s) {
-    case "Aguardando Parecer Jurídico":
+    case "Em Análise":
       return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
-    case "Em Revisão":
+    case "Sindicância":
       return "bg-status-blue-bg border-status-blue-border text-status-blue-text";
+    case "Aguardando Assinatura":
+      return "bg-status-purple-bg border-status-purple-border text-status-purple-text";
     case "Finalizado":
       return "bg-status-green-bg border-status-green-border text-status-green-text";
   }
 }
 
-const statusOpcoes: ("todos" | LegalReviewStatus)[] = [
+const statusOpcoes: ("todos" | StatusAtual)[] = [
   "todos",
-  "Aguardando Parecer Jurídico",
-  "Em Revisão",
+  "Em Análise",
+  "Sindicância",
   "Finalizado",
 ];
 
@@ -33,21 +37,31 @@ export default function TodosProcessos() {
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<(typeof statusOpcoes)[number]>("todos");
 
-  // No momento usamos o dataset legalCasesAwaitingMock como fonte base
+  const [processos, setProcessos] = useState<{ id: string; funcionario: string; tipoDesvio: string; classificacao: Classificacao; dataAbertura: string; status: StatusAtual; }[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchProcesses().then((data) => {
+      if (mounted) setProcessos((data as any) || []);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const itens = useMemo(() => {
-    const base = legalCasesAwaitingMock;
-    const filtradoStatus =
-      statusFiltro === "todos" ? base : base.filter((c) => c.status === statusFiltro);
+    const base = processos;
+    const filtradoStatus = statusFiltro === "todos" ? base : base.filter((c) => c.status === statusFiltro);
     if (!busca.trim()) return filtradoStatus;
     const q = busca.toLowerCase();
     return filtradoStatus.filter(
       (c) =>
         c.id.toLowerCase().includes(q) ||
-        c.employeeName.toLowerCase().includes(q) ||
-        c.deviationType.toLowerCase().includes(q) ||
-        c.classification.toLowerCase().includes(q),
+        c.funcionario.toLowerCase().includes(q) ||
+        c.tipoDesvio.toLowerCase().includes(q) ||
+        (c.classificacao as string).toLowerCase().includes(q),
     );
-  }, [busca, statusFiltro]);
+  }, [busca, statusFiltro, processos]);
 
   const aoSair = () => {
     window.location.href = "/";
@@ -119,12 +133,12 @@ export default function TodosProcessos() {
                               {c.id}
                             </button>
                           </TableCell>
-                          <TableCell className="truncate">{c.employeeName}</TableCell>
-                          <TableCell className="truncate">{c.deviationType}</TableCell>
-                          <TableCell>{c.classification}</TableCell>
-                          <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+                          <TableCell className="truncate">{c.funcionario}</TableCell>
+                          <TableCell className="truncate">{c.tipoDesvio}</TableCell>
+                          <TableCell>{c.classificacao}</TableCell>
+                          <TableCell className="text-sis-secondary-text">{c.dataAbertura}</TableCell>
                           <TableCell>
-                            <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+                            <Badge className={`border ${getStatusClasses(c.status)}`}>{c.status}</Badge>
                           </TableCell>
                           <TableCell>
                             {c.status === "Finalizado" ? (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
@@ -13,13 +13,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { funcionariosMock } from "@/data/funcionarios";
 import { fetchEmployees } from "@/lib/api";
 
 export default function FuncionariosListaPage() {
   const navigate = useNavigate();
   const [busca, setBusca] = useState("");
-  const [employees, setEmployees] = useState<typeof funcionariosMock>(funcionariosMock);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -44,7 +43,7 @@ export default function FuncionariosListaPage() {
         .toLowerCase()
         .includes(q),
     );
-  }, [busca]);
+  }, [busca, employees]);
 
   const handleSair = () => {
     window.location.href = "/";

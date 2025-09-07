@@ -23,11 +23,11 @@ export interface ProcessoAPI {
 }
 
 export async function fetchEmployees() {
-  const { data: employees, error: empErr } = await supabase.from<FuncionarioAPI>("employees").select("*");
+  const { data: employees, error: empErr } = await supabase.from("employees").select("*");
   if (empErr) throw empErr;
 
-  const { data: processes } = await supabase.from<ProcessoAPI>("processes").select("*");
-  const { data: profiles } = await supabase.from<any>("profiles").select("*");
+  const { data: processes } = await supabase.from("processes").select("*");
+  const { data: profiles } = await supabase.from("profiles").select("*");
 
   const profilesMap = new Map<string, any>();
   profiles?.forEach((p) => profilesMap.set(p.id, p));
@@ -55,7 +55,7 @@ export async function fetchEmployees() {
 }
 
 export async function fetchEmployeeById(matriculaOrId: string) {
-  const { data: employees } = await supabase.from<FuncionarioAPI>("employees").select("*").or(`matricula.eq.${matriculaOrId},id.eq.${matriculaOrId}`);
+  const { data: employees } = await supabase.from("employees").select("*").or(`matricula.eq.${matriculaOrId},id.eq.${matriculaOrId}`);
   const emp = employees?.[0];
   if (!emp) return undefined;
   const employeesMapped = await fetchEmployees();
@@ -63,8 +63,8 @@ export async function fetchEmployeeById(matriculaOrId: string) {
 }
 
 export async function fetchProcesses() {
-  const { data: processes } = await supabase.from<ProcessoAPI>("processes").select("*");
-  const { data: employees } = await supabase.from<FuncionarioAPI>("employees").select("*");
+  const { data: processes } = await supabase.from("processes").select("*");
+  const { data: employees } = await supabase.from("employees").select("*");
   const empMap = new Map<string, string>();
   (employees || []).forEach((e) => empMap.set(e.id, e.nome_completo ?? e.matricula ?? ""));
 
@@ -74,28 +74,31 @@ export async function fetchProcesses() {
     tipoDesvio: p.tipo_desvio ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
     dataAbertura: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
+    createdAt: p.created_at ?? null,
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
+    resolucao: p.resolucao ?? "",
   }));
 }
 
 export async function fetchProcessById(id: string) {
-  const { data: processes } = await supabase.from<ProcessoAPI>("processes").select("*").eq("id", id);
+  const { data: processes } = await supabase.from("processes").select("*").eq("id", id);
   if (!processes || processes.length === 0) return undefined;
   const p = processes[0];
-  const { data: employee } = await supabase.from<FuncionarioAPI>("employees").select("*").eq("id", p.employee_id).limit(1).single();
+  const { data: employee } = await supabase.from("employees").select("*").eq("id", p.employee_id).limit(1).single();
   return {
     id: p.id,
     funcionario: employee?.nome_completo ?? "",
     tipoDesvio: p.tipo_desvio ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
     dataAbertura: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
+    createdAt: p.created_at ?? null,
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
+    resolucao: p.resolucao ?? "",
   };
 }
 
 export async function fetchUsers() {
-  // Supabase public anon key cannot list auth.users; use profiles table as source of truth
-  const { data: profiles } = await supabase.from<any>("profiles").select("*");
+  const { data: profiles } = await supabase.from("profiles").select("*");
   return (profiles || []).map((p) => ({
     id: p.id,
     nome: p.nome ?? "",
@@ -105,4 +108,15 @@ export async function fetchUsers() {
     criadoEm: p.created_at ?? new Date().toISOString(),
     ultimoAcesso: null,
   }));
+}
+
+export type PerfilUsuario = "administrador" | "gestor" | "juridico" | "funcionario";
+export async function updateProfile(id: string, patch: { nome?: string; perfil?: PerfilUsuario; ativo?: boolean }) {
+  const { error } = await supabase.from("profiles").update(patch as any).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateProcess(id: string, patch: Partial<ProcessoAPI>) {
+  const { error } = await supabase.from("processes").update(patch as any).eq("id", id);
+  if (error) throw error;
 }

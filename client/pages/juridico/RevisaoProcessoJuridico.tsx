@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import SidebarJuridico from "@/components/SidebarJuridico";
@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RichTextEditor from "@/components/RichTextEditor";
-import { legalCasesAwaitingMock } from "@/data/legal";
 import { useToast } from "@/hooks/use-toast";
+import { fetchProcessById } from "@/lib/api";
 
 export default function RevisaoProcessoJuridico() {
   const navegar = useNavigate();
@@ -17,20 +17,23 @@ export default function RevisaoProcessoJuridico() {
   const { toast } = useToast();
 
   const idProcesso = parametros.id as string;
-  const processoJuridico = useMemo(() => legalCasesAwaitingMock.find((c) => c.id === idProcesso), [idProcesso]);
+  const [processoJuridico, setProcessoJuridico] = useState<any | null>(null);
   const somenteVisualizacao = processoJuridico?.status === "Finalizado";
 
   const [parecerJuridico, setParecerJuridico] = useState<string>("");
-  const [arquivosEnviados, setArquivosEnviados] = useState<File[]>([]);
   const [decisao, setDecisao] = useState<string>("");
   const [medidaRecomendada, setMedidaRecomendada] = useState<string>("");
 
-  const aoAlterarArquivos = (files: FileList | null) => {
-    if (!files) return;
-    setArquivosEnviados(Array.from(files));
-  };
+  useEffect(() => {
+    let mounted = true;
+    if (!idProcesso) return;
+    fetchProcessById(idProcesso)
+      .then((p) => { if (mounted) setProcessoJuridico(p as any); })
+      .catch(() => setProcessoJuridico(null));
+    return () => { mounted = false; };
+  }, [idProcesso]);
 
-  const aoFinalizar = () => {
+  const aoFinalizar = async () => {
     if (!decisao) {
       toast({ title: "Selecione o Resultado da Análise", description: "Campo obrigatório." });
       return;
@@ -40,17 +43,22 @@ export default function RevisaoProcessoJuridico() {
       return;
     }
 
-    // eslint-disable-next-line no-console
-    console.log({
-      id: idProcesso,
-      parecerJuridico,
-      arquivosEnviados: arquivosEnviados.map((f) => f.name),
-      decisao,
-      medidaRecomendada: decisao === "Aplicar Medida Disciplinar" ? medidaRecomendada : undefined,
-    });
+    const resolucao =
+      decisao === "Arquivar Processo"
+        ? "Arquivado"
+        : decisao === "Aplicar Medida Disciplinar"
+        ? `Medida disciplinar: ${medidaRecomendada}`
+        : "Recomendação: Justa Causa Direta";
 
-    toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
-    navegar("/juridico");
+    try {
+      const patch = { status: "Finalizado" as any, resolucao: `${resolucao}${parecerJuridico ? ` — Parecer: ${parecerJuridico}` : ""}` };
+      const { updateProcess } = await import("@/lib/api");
+      await updateProcess(idProcesso, patch as any);
+      toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
+      navegar("/juridico");
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar decisão", description: e?.message || String(e) });
+    }
   };
 
   const aoSair = () => {
@@ -87,42 +95,26 @@ export default function RevisaoProcessoJuridico() {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Funcionário</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.employeeName}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.funcionario}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-sis-secondary-text">Data da Ocorrência</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.occurrenceDate}</p>
+                        <Label className="text-xs text-sis-secondary-text">Data de Abertura</Label>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.dataAbertura}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Tipo de Desvio</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.deviationType}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.tipoDesvio}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Classificação</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.classification}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.classificacao}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-sis-secondary-text">Data de Encaminhamento</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.referralDate}</p>
+                        <Label className="text-xs text-sis-secondary-text">Data de Abertura</Label>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.dataAbertura}</p>
                       </div>
                     </div>
-                    <div>
-                      <Label className="text-xs text-sis-secondary-text">Descrição Detalhada (Gestor)</Label>
-                      <p className="text-sm text-sis-dark-text">{processoJuridico.managerDescription}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-sis-secondary-text">Documentos Anexados (Gestor)</Label>
-                      <ul className="list-disc pl-5 text-sm">
-                        {processoJuridico.managerAttachments.map((a) => (
-                          <li key={a.name}>
-                            <a href={a.url} className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
-                              {a.name}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
+                                      </CardContent>
                 </Card>
 
                 {/* 2. Análise Jurídica / Sindicância */}
@@ -146,19 +138,6 @@ export default function RevisaoProcessoJuridico() {
                         />
                       )}
                     </div>
-                    {!somenteVisualizacao && (
-                      <div>
-                        <Label className="mb-2 block text-xs text-sis-secondary-text">Anexar Documentos da Sindicância</Label>
-                        <Input type="file" multiple onChange={(e) => aoAlterarArquivos(e.target.files)} />
-                        {arquivosEnviados.length > 0 && (
-                          <ul className="mt-2 list-disc pl-5 text-sm">
-                            {arquivosEnviados.map((f) => (
-                              <li key={f.name}>{f.name}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
 
@@ -173,15 +152,15 @@ export default function RevisaoProcessoJuridico() {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Resultado da Análise</Label>
-                            <p className="font-medium text-sis-dark-text">{processoJuridico?.legalDecisionResult || "—"}</p>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.status || "—"}</p>
                           </div>
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Medida Recomendada/Aplicada</Label>
-                            <p className="font-medium text-sis-dark-text">{processoJuridico?.legalDecisionMeasure ?? "—"}</p>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.resolucao || "—"}</p>
                           </div>
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Data da Decisão</Label>
-                            <p className="font-medium text-sis-dark-text">{processoJuridico?.decisionDate || "—"}</p>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.dataAbertura || "—"}</p>
                           </div>
                         </div>
                         <div className="flex gap-3 pt-2">
