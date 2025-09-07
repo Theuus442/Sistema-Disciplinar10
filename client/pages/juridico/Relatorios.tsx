@@ -51,26 +51,36 @@ export default function Relatorios() {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
+  const [processos, setProcessos] = useState<{ id: string; funcionario: string; tipoDesvio: string; classificacao: Classificacao; dataAbertura: string; status: StatusAtual; }[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchProcesses().then((data) => {
+      if (mounted) setProcessos((data as any) || []);
+    });
+    return () => { mounted = false; };
+  }, []);
+
   const dados = useMemo(() => {
-    const base = legalCasesAwaitingMock;
+    const base = processos;
     const porStatus = statusFiltro === "todos" ? base : base.filter((c) => c.status === statusFiltro);
     const porBusca = !busca.trim()
       ? porStatus
       : porStatus.filter(
           (c) =>
             c.id.toLowerCase().includes(busca.toLowerCase()) ||
-            c.employeeName.toLowerCase().includes(busca.toLowerCase()) ||
-            c.deviationType.toLowerCase().includes(busca.toLowerCase()) ||
-            c.classification.toLowerCase().includes(busca.toLowerCase()),
+            c.funcionario.toLowerCase().includes(busca.toLowerCase()) ||
+            c.tipoDesvio.toLowerCase().includes(busca.toLowerCase()) ||
+            (c.classificacao as string).toLowerCase().includes(busca.toLowerCase()),
         );
     const porPeriodo = porBusca.filter((c) => {
-      const d = new Date(c.referralDate);
+      const d = new Date(c.dataAbertura);
       const okInicio = dataInicio ? d >= new Date(dataInicio) : true;
       const okFim = dataFim ? d <= new Date(dataFim) : true;
       return okInicio && okFim;
     });
     return porPeriodo;
-  }, [busca, statusFiltro, dataInicio, dataFim]);
+  }, [busca, statusFiltro, dataInicio, dataFim, processos]);
 
   const metricas = useMemo(() => {
     const total = dados.length;
