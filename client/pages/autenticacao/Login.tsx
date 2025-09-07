@@ -24,8 +24,43 @@ export default function Login() {
       }
 
       if (data?.session) {
-        toast({ title: "Login bem-sucedido" });
-        navigate("/");
+        // fetch profile to determine role
+        try {
+          const userId = data.user?.id;
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("perfil")
+            .eq("id", userId)
+            .limit(1)
+            .single();
+
+          if (profileError) {
+            toast({ title: "Login bem-sucedido", description: "Não foi possível obter o perfil do usuário." });
+            navigate("/");
+            return;
+          }
+
+          const role = profile?.perfil as string | undefined;
+          toast({ title: "Login bem-sucedido" });
+
+          switch (role) {
+            case "administrador":
+              navigate("/administrador");
+              break;
+            case "gestor":
+              navigate("/gestor");
+              break;
+            case "juridico":
+              navigate("/juridico");
+              break;
+            default:
+              navigate("/");
+              break;
+          }
+        } catch (err) {
+          toast({ title: "Login bem-sucedido" });
+          navigate("/");
+        }
       } else {
         toast({ title: "Login", description: "Verifique suas credenciais." });
       }
