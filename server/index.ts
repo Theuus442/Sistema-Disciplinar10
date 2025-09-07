@@ -22,6 +22,7 @@ export function createServer() {
 
   // Admin endpoints
   app.get("/api/admin/users", listProfiles as any);
+  app.get("/api/admin/logins", listRecentLogins as any);
   app.post("/api/admin/users", createUserAndProfile as any);
 
   return app;
