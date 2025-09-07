@@ -22,7 +22,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { FileText, Clock, CheckCircle2, PieChart as PieChartIcon, BarChart3, Calendar, Search, Download } from "lucide-react";
+import { FileText, Clock, CheckCircle2, PieChart as PieChartIcon, BarChart3, Calendar, Search, Download, FileSpreadsheet } from "lucide-react";
 
 function getLegalStatusClasses(s: LegalReviewStatus) {
   switch (s) {
@@ -38,7 +38,7 @@ function getLegalStatusClasses(s: LegalReviewStatus) {
 const statusOpcoes: ("todos" | LegalReviewStatus)[] = [
   "todos",
   "Aguardando Parecer Jurídico",
-  "Em Revisão",
+  "Em Revis��o",
   "Finalizado",
 ];
 
