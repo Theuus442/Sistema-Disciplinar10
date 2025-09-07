@@ -12,20 +12,14 @@ export default function Login() {
 
   function handleRedirectByRole(role?: string) {
     const r = role?.toLowerCase?.();
-    toast({ title: "Login bem-sucedido" });
-    switch (r) {
-      case "administrador":
-        navigate("/administrador");
-        break;
-      case "gestor":
-        navigate("/gestor");
-        break;
-      case "juridico":
-        navigate("/juridico");
-        break;
-      default:
-        navigate("/");
-        break;
+    const path = r === "administrador" ? "/administrador" : r === "gestor" ? "/gestor" : r === "juridico" ? "/juridico" : "/";
+    try {
+      console.info("handleRedirectByRole", { role, normalized: r, path });
+      toast({ title: "Login bem-sucedido", description: `Redirecionando para ${path}` });
+      // use replace to avoid back-navigation to login
+      navigate(path, { replace: true });
+    } catch (e) {
+      console.error("redirect error:", e);
     }
   }
 
