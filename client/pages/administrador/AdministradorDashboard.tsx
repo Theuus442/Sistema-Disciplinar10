@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import * as Router from "react-router-dom";
 import SidebarAdministrador from "@/components/SidebarAdministrador";
 import CartaoMetrica from "@/components/CartaoMetrica";
 import UltimosLogins from "@/components/UltimosLogins";
