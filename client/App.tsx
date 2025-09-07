@@ -24,6 +24,25 @@ import ProcessoAcompanhamento from "./pages/gestor/ProcessoAcompanhamento";
 import FuncionarioPage from "./pages/gestor/Funcionario";
 import FuncionariosListaPage from "./pages/gestor/Funcionarios";
 
+// Mitigate ResizeObserver loop warnings by deferring callbacks to next frame
+if (typeof window !== "undefined" && (window as any).ResizeObserver) {
+  const OriginalRO = (window as any).ResizeObserver;
+  (window as any).ResizeObserver = class extends OriginalRO {
+    constructor(callback: ResizeObserverCallback) {
+      super((entries: ResizeObserverEntry[], observer: ResizeObserver) => {
+        requestAnimationFrame(() => callback(entries, observer));
+      });
+    }
+  };
+  // Guard against Chrome's noisy error event for RO loop limit
+  window.addEventListener("error", (e: ErrorEvent) => {
+    const msg = e?.message || "";
+    if (msg.includes("ResizeObserver loop limit exceeded") || msg.includes("ResizeObserver loop completed with undelivered notifications")) {
+      e.stopImmediatePropagation();
+    }
+  }, true);
+}
+
 const queryClient = new QueryClient();
 
 const App = () => (
