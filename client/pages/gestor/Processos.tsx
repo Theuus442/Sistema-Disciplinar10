@@ -78,9 +78,9 @@ export default function ProcessosPage() {
   );
 
   const tiposDisponiveis = useMemo(() => {
-    const set = new Set(processosMock.map((p) => p.tipoDesvio));
+    const set = new Set(processes.map((p) => p.tipoDesvio));
     return ["todos", ...Array.from(set)];
-  }, []);
+  }, [processes]);
 
   const classificacoes: (Classificacao | "todas")[] = [
     "todas",
