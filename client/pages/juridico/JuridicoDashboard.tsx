@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
+import SidebarJuridico from "@/components/SidebarJuridico";
 import MetricCard from "@/components/MetricCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
