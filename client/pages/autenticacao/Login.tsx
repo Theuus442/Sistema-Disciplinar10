@@ -40,60 +40,71 @@ export default function Login() {
         // fetch profile to determine role
         try {
           const userId = data.user?.id;
+          const attemptedEmail = usuario;
 
-          // Primary: fetch profile from public.profiles (use maybeSingle to handle 0 rows)
-          const { data: profile, error: profileError } = await supabase
+          // Log auth user state
+          const { data: authUserData, error: getUserErr } = await supabase.auth.getUser();
+          console.info("auth.getUser result:", { authUserData, getUserErr });
+
+          // Primary: try to fetch profile by id
+          const { data: profileById, error: profileByIdError } = await supabase
             .from("profiles")
-            .select("perfil")
+            .select("id, perfil, nome")
             .eq("id", userId)
             .maybeSingle();
 
-          if (profileError) {
+          if (profileByIdError) {
             try {
-              console.error("profiles fetch error:", JSON.stringify(profileError));
+              console.error("profiles fetch error:", JSON.stringify(profileByIdError));
             } catch (e) {
-              console.error("profiles fetch error (unable to stringify):", profileError);
+              console.error("profiles fetch error (unable to stringify):", profileByIdError);
             }
+          }
 
-            // If there's an error reading profiles (likely RLS), fallback to reading auth metadata
-            const { data: authUserData, error: getUserErr } = await supabase.auth.getUser();
-            if (getUserErr) {
-              console.error("auth.getUser error:", getUserErr);
-              toast({ title: "Login bem-sucedido", description: "Não foi possível obter o perfil do usuário." });
-              navigate("/");
-              return;
-            }
-
-            const authUser = authUserData?.user;
-            const roleFromMetadata = (authUser as any)?.user_metadata?.perfil || (authUser as any)?.user_metadata?.role;
-
-            if (roleFromMetadata) {
-              handleRedirectByRole(roleFromMetadata as string);
-              return;
-            }
-
-            // Default to 'funcionario' when profile not accessible
-            handleRedirectByRole("funcionario");
+          if (profileById) {
+            console.info("profile found by id:", profileById);
+            handleRedirectByRole(profileById.perfil);
             return;
           }
 
-          // If profile is null (no row), prefer role set in auth metadata, otherwise default to 'funcionario'
-          if (!profile) {
-            const { data: authUserData, error: getUserErr } = await supabase.auth.getUser();
-            if (!getUserErr && authUserData?.user) {
-              const roleFromMetadata = (authUserData.user as any)?.user_metadata?.perfil || (authUserData.user as any)?.user_metadata?.role;
-              if (roleFromMetadata) {
-                handleRedirectByRole(roleFromMetadata as string);
+          // If not found by id, try searching by name/email fragment
+          try {
+            const nameFragment = attemptedEmail?.split("@")[0] ?? "";
+            if (nameFragment) {
+              const { data: profileByName, error: profileByNameError } = await supabase
+                .from("profiles")
+                .select("id, perfil, nome")
+                .ilike("nome", `%${nameFragment}%`)
+                .limit(1);
+
+              if (profileByNameError) {
+                console.error("profiles search by name error:", profileByNameError);
+              }
+
+              if (profileByName && profileByName.length > 0) {
+                console.info("profile found by name/email fragment:", profileByName[0]);
+                handleRedirectByRole(profileByName[0].perfil);
                 return;
               }
             }
-
-            handleRedirectByRole("funcionario");
-            return;
+          } catch (e) {
+            console.error("search by name fallback threw:", e);
           }
 
-          // Normal path: profile exists
-          handleRedirectByRole(profile.perfil);
+          // Fallback to role in auth metadata
+          if (authUserData?.user) {
+            const roleFromMetadata = (authUserData.user as any)?.user_metadata?.perfil || (authUserData.user as any)?.user_metadata?.role;
+            if (roleFromMetadata) {
+              console.info("role found in auth user metadata:", roleFromMetadata);
+              handleRedirectByRole(roleFromMetadata as string);
+              return;
+            }
+          }
+
+          // Final fallback: default to funcionario
+          console.info("No profile or metadata role found — defaulting to 'funcionario'");
+          handleRedirectByRole("funcionario");
+          return;
         } catch (err) {
           console.error("error determining profile:", err);
           toast({ title: "Login bem-sucedido" });
