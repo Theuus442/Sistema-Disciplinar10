@@ -21,6 +21,7 @@ export function createServer() {
   app.get("/api/demo", handleDemo);
 
   // Admin endpoints
+  app.get("/api/admin/users", (await import("./routes/admin")).listProfiles as any);
   app.post("/api/admin/users", createUserAndProfile as any);
 
   return app;
