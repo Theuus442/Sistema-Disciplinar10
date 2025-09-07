@@ -136,7 +136,7 @@ export default function JuridicoDashboard() {
       {/* Conteúdo Principal */}
       <div className="flex flex-1 flex-col">
         {/* Header */}
-        <Header onRegistrarDesvio={handleRegistrarDesvio} />
+        <Header onRegistrarDesvio={handleRegistrarDesvio} userType="juridico" />
 
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto p-6">
