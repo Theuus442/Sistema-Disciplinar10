@@ -170,20 +170,24 @@ export default function ProcessosPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Funcionário</TableHead>
-                    <TableHead>Tipo de Desvio</TableHead>
-                    <TableHead>Classificação</TableHead>
-                    <TableHead>Data de Abertura</TableHead>
-                    <TableHead>Status Atual</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="w-[26%]">Funcionário</TableHead>
+                    <TableHead className="w-[24%]">Tipo de Desvio</TableHead>
+                    <TableHead className="w-[14%]">Classificação</TableHead>
+                    <TableHead className="w-[14%]">Data de Abertura</TableHead>
+                    <TableHead className="w-[12%]">Status Atual</TableHead>
+                    <TableHead className="w-[10%] text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtrados.map((p) => (
                     <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.funcionario}</TableCell>
-                      <TableCell>{p.tipoDesvio}</TableCell>
-                      <TableCell>{p.classificacao}</TableCell>
+                      <TableCell className="font-medium truncate">{p.funcionario}</TableCell>
+                      <TableCell className="truncate">{p.tipoDesvio}</TableCell>
+                      <TableCell>
+                        <Badge className={`border ${getClassificacaoClasses(p.classificacao)}`}>
+                          {p.classificacao}
+                        </Badge>
+                      </TableCell>
                       <TableCell>{p.dataAbertura}</TableCell>
                       <TableCell>{p.status}</TableCell>
                       <TableCell className="text-right">
