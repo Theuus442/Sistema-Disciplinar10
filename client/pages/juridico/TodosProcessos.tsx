@@ -121,12 +121,12 @@ export default function TodosProcessos() {
                               {c.id}
                             </button>
                           </TableCell>
-                          <TableCell className="truncate">{c.employeeName}</TableCell>
-                          <TableCell className="truncate">{c.deviationType}</TableCell>
-                          <TableCell>{c.classification}</TableCell>
-                          <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+                          <TableCell className="truncate">{c.funcionario}</TableCell>
+                          <TableCell className="truncate">{c.tipoDesvio}</TableCell>
+                          <TableCell>{c.classificacao}</TableCell>
+                          <TableCell className="text-sis-secondary-text">{c.dataAbertura}</TableCell>
                           <TableCell>
-                            <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+                            <Badge className={`border ${getStatusClasses(c.status)}`}>{c.status}</Badge>
                           </TableCell>
                           <TableCell>
                             {c.status === "Finalizado" ? (
