@@ -84,8 +84,8 @@ export default function Relatorios() {
 
   const metricas = useMemo(() => {
     const total = dados.length;
-    const aguardando = dados.filter((d) => d.status === "Aguardando Parecer Jurídico").length;
-    const revisao = dados.filter((d) => d.status === "Em Revisão").length;
+    const aguardando = dados.filter((d) => d.status === "Em Análise").length;
+    const revisao = dados.filter((d) => d.status === "Sindicância").length;
     const finalizado = dados.filter((d) => d.status === "Finalizado").length;
     return { total, aguardando, revisao, finalizado };
   }, [dados]);
@@ -102,7 +102,8 @@ export default function Relatorios() {
   const distribuicaoClassificacao = useMemo(() => {
     const mapa = new Map<string, number>();
     dados.forEach((d) => {
-      mapa.set(d.classification, (mapa.get(d.classification) || 0) + 1);
+      const cls = d.classificacao as string;
+      mapa.set(cls, (mapa.get(cls) || 0) + 1);
     });
     return Array.from(mapa.entries()).map(([name, value]) => ({ name, value }));
   }, [dados]);
@@ -124,10 +125,10 @@ export default function Relatorios() {
     ];
     const linhas = dados.map((d) => [
       d.id,
-      d.employeeName,
-      d.deviationType,
-      d.classification,
-      d.referralDate,
+      d.funcionario,
+      d.tipoDesvio,
+      d.classificacao,
+      d.dataAbertura,
       d.status,
       d.legalDecisionResult ?? "",
       d.legalDecisionMeasure ?? "",
@@ -318,7 +319,7 @@ export default function Relatorios() {
                         <TableHead className="w-[20%]">Funcionário</TableHead>
                         <TableHead className="w-[18%]">Tipo de Desvio</TableHead>
                         <TableHead className="w-[14%]">Classificação</TableHead>
-                        <TableHead className="w-[16%]">Data de Encaminhamento</TableHead>
+                        <TableHead className="w-[16%]">Data de Abertura</TableHead>
                         <TableHead className="w-[10%]">Status</TableHead>
                         <TableHead className="w-[8%]">Ação</TableHead>
                       </TableRow>
@@ -334,12 +335,12 @@ export default function Relatorios() {
                         dados.map((c) => (
                           <TableRow key={c.id} className="hover:bg-gray-50">
                             <TableCell className="font-medium">{c.id}</TableCell>
-                            <TableCell className="truncate">{c.employeeName}</TableCell>
-                            <TableCell className="truncate">{c.deviationType}</TableCell>
-                            <TableCell>{c.classification}</TableCell>
-                            <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+                            <TableCell className="truncate">{c.funcionario}</TableCell>
+                            <TableCell className="truncate">{c.tipoDesvio}</TableCell>
+                            <TableCell>{c.classificacao}</TableCell>
+                            <TableCell className="text-sis-secondary-text">{c.dataAbertura}</TableCell>
                             <TableCell>
-                              <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+                              <Badge className={`border ${getStatusClasses(c.status)}`}>{c.status}</Badge>
                             </TableCell>
                             <TableCell>
                               <Button size="sm" onClick={() => navegar(`/juridico/processos/${c.id}`)}>Abrir</Button>
