@@ -3,6 +3,8 @@ import Header from "@/components/Header";
 import SidebarJuridico from "@/components/SidebarJuridico";
 import MetricCard from "@/components/MetricCard";
 import { Badge } from "@/components/ui/badge";
+import { legalCasesAwaitingMock, type LegalReviewStatus } from "@/data/legal";
+import { Button } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -31,6 +33,57 @@ const getStatusJuridicoClasses = (s: StatusJuridico) => {
       return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
   }
 };
+
+function getLegalStatusClasses(s: LegalReviewStatus) {
+  switch (s) {
+    case "Aguardando Parecer Jurídico":
+      return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
+    case "Em Revisão":
+      return "bg-status-blue-bg border-status-blue-border text-status-blue-text";
+    case "Finalizado":
+      return "bg-status-green-bg border-status-green-border text-status-green-text";
+  }
+}
+
+function AwaitingLegalTable() {
+  const navigate = useNavigate();
+  return (
+    <div className="rounded-md border border-sis-border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[14%]">ID do Processo</TableHead>
+            <TableHead className="w-[20%]">Funcionário</TableHead>
+            <TableHead className="w-[18%]">Tipo de Desvio</TableHead>
+            <TableHead className="w-[14%]">Classificação</TableHead>
+            <TableHead className="w-[16%]">Data de Encaminhamento</TableHead>
+            <TableHead className="w-[10%]">Status</TableHead>
+            <TableHead className="w-[8%]">Ação</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {legalCasesAwaitingMock.map((c) => (
+            <TableRow key={c.id}>
+              <TableCell className="font-medium">{c.id}</TableCell>
+              <TableCell className="truncate">{c.employeeName}</TableCell>
+              <TableCell className="truncate">{c.deviationType}</TableCell>
+              <TableCell>{c.classification}</TableCell>
+              <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+              <TableCell>
+                <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+              </TableCell>
+              <TableCell>
+                <Button size="sm" onClick={() => navigate(`/juridico/processos/${c.id}`)}>
+                  Analisar Processo
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
 export default function JuridicoDashboard() {
   const navigate = useNavigate();
@@ -185,38 +238,13 @@ export default function JuridicoDashboard() {
                   Registrar Novo Desvio
                 </Button>
 
-                {/* Tabela de Processos */}
+                {/* Processos Aguardando Análise Jurídica (Sindicância) */}
                 <Card className="border-sis-border bg-white">
                   <CardHeader>
-                    <CardTitle className="text-xl">Processos Aguardando Análise Jurídica</CardTitle>
+                    <CardTitle className="text-xl">Processos Aguardando Análise Jurídica (Sindicância)</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="rounded-md border border-sis-border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[18%]">ID do Processo</TableHead>
-                            <TableHead className="w-[48%]">Assunto</TableHead>
-                            <TableHead className="w-[16%]">Vencimento</TableHead>
-                            <TableHead className="w-[18%]">Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {processosJuridicosMock.map((processo) => (
-                            <TableRow key={processo.id}>
-                              <TableCell className="font-medium">{processo.id}</TableCell>
-                              <TableCell className="truncate">{processo.assunto}</TableCell>
-                              <TableCell className="text-sis-secondary-text">{processo.vencimento}</TableCell>
-                              <TableCell>
-                                <Badge className={`border ${getStatusJuridicoClasses(processo.status)}`}>
-                                  {processo.status}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                    <AwaitingLegalTable />
                   </CardContent>
                 </Card>
               </div>
