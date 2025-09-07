@@ -148,7 +148,7 @@ export default function GestorDashboard() {
       {/* Conteúdo Principal */}
       <div className="flex flex-1 flex-col">
         {/* Header */}
-        <Header onRegistrarDesvio={handleRegistrarDesvio} />
+        <Header onRegistrarDesvio={handleRegistrarDesvio} userType="gestor" />
 
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto p-6">
