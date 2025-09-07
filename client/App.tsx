@@ -27,6 +27,8 @@ const App = () => (
           <Route path="/administrador" element={<AdministradorDashboard />} />
           <Route path="/juridico" element={<JuridicoDashboard />} />
           <Route path="/gestor/registrar" element={<GestorRegistrarDesvio />} />
+          <Route path="/gestor/processos" element={<ProcessosPage />} />
+          <Route path="/gestor/processos/:id" element={<ProcessoAcompanhamento />} />
           {/* ADICIONE TODAS AS ROTAS PERSONALIZADAS ACIMA DA ROTA CATCH-ALL "*" */}
           <Route path="*" element={<NaoEncontrado />} />
         </Routes>
