@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -25,6 +26,19 @@ import {
   type Classificacao,
   type StatusAtual,
 } from "@/data/processos";
+
+const getClassificacaoClasses = (c: Classificacao) => {
+  switch (c) {
+    case "Leve":
+      return "bg-status-green-bg border-status-green-border text-status-green-text";
+    case "Média":
+      return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
+    case "Grave":
+      return "bg-red-100 border-red-200 text-red-800";
+    case "Gravíssima":
+      return "bg-red-200 border-red-300 text-red-900";
+  }
+};
 
 export default function ProcessosPage() {
   const navigate = useNavigate();
