@@ -17,18 +17,21 @@ export default function RevisaoProcessoJuridico() {
   const { toast } = useToast();
 
   const idProcesso = parametros.id as string;
-  const processoJuridico = useMemo(() => legalCasesAwaitingMock.find((c) => c.id === idProcesso), [idProcesso]);
+  const [processoJuridico, setProcessoJuridico] = useState<any | null>(null);
   const somenteVisualizacao = processoJuridico?.status === "Finalizado";
 
   const [parecerJuridico, setParecerJuridico] = useState<string>("");
-  const [arquivosEnviados, setArquivosEnviados] = useState<File[]>([]);
   const [decisao, setDecisao] = useState<string>("");
   const [medidaRecomendada, setMedidaRecomendada] = useState<string>("");
 
-  const aoAlterarArquivos = (files: FileList | null) => {
-    if (!files) return;
-    setArquivosEnviados(Array.from(files));
-  };
+  useEffect(() => {
+    let mounted = true;
+    if (!idProcesso) return;
+    fetchProcessById(idProcesso)
+      .then((p) => { if (mounted) setProcessoJuridico(p as any); })
+      .catch(() => setProcessoJuridico(null));
+    return () => { mounted = false; };
+  }, [idProcesso]);
 
   const aoFinalizar = () => {
     if (!decisao) {
@@ -132,7 +135,7 @@ export default function RevisaoProcessoJuridico() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label className="mb-2 block text-xs text-sis-secondary-text">Parecer Jur��dico</Label>
+                      <Label className="mb-2 block text-xs text-sis-secondary-text">Parecer Jurídico</Label>
                       {somenteVisualizacao ? (
                         <div
                           className="min-h-[120px] rounded-md border border-sis-border bg-gray-50 p-3 text-sm"
