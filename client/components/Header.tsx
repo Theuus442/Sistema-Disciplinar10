@@ -2,6 +2,8 @@ import { useState } from "react";
 
 interface HeaderProps {
   onRegistrarDesvio?: () => void;
+  userType?: "gestor" | "juridico" | "administrador";
+  placeholder?: string;
 }
 
 export default function Header({ onRegistrarDesvio }: HeaderProps) {
