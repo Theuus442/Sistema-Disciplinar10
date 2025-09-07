@@ -78,6 +78,8 @@ export default function SidebarAdministrador({ onSair }: SidebarAdministradorPro
               onClick={() => {
                 setActiveItem(item.id);
                 if (item.id === "dashboard") navigate("/administrador");
+                if (item.id === "gerenciamento-usuarios") navigate("/administrador/usuarios");
+                if (item.id === "configuracoes-sistema") navigate("/administrador/configuracoes");
               }}
               className={`flex w-full items-center space-x-3 rounded-md px-2 py-2.5 text-left font-roboto text-sm font-medium transition-colors ${
                 activeItem === item.id
