@@ -10,6 +10,8 @@ import Login from "./pages/autenticacao/Login";
 import NaoEncontrado from "./pages/erros/NaoEncontrado";
 import GestorDashboard from "./pages/gestor/GestorDashboard";
 import AdministradorDashboard from "./pages/administrador/AdministradorDashboard";
+import UsuariosAdminPage from "./pages/administrador/Usuarios";
+import ConfiguracoesSistemaAdminPage from "./pages/administrador/ConfiguracoesSistema";
 import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
 import RevisaoProcessoJuridico from "./pages/juridico/RevisaoProcessoJuridico";
 import ProcessosAguardandoAnalise from "./pages/juridico/ProcessosAguardandoAnalise";
@@ -34,6 +36,8 @@ const App = () => (
           <Route path="/" element={<Login />} />
           <Route path="/gestor" element={<GestorDashboard />} />
           <Route path="/administrador" element={<AdministradorDashboard />} />
+          <Route path="/administrador/usuarios" element={<UsuariosAdminPage />} />
+          <Route path="/administrador/configuracoes" element={<ConfiguracoesSistemaAdminPage />} />
           <Route path="/juridico" element={<JuridicoDashboard />} />
           <Route path="/juridico/processos/aguardando" element={<ProcessosAguardandoAnalise />} />
           <Route path="/juridico/processos/todos" element={<TodosProcessos />} />
