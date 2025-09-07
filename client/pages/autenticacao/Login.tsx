@@ -7,9 +7,31 @@ export default function Login() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
 
-  const enviarLogin = (e: FormEvent) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const enviarLogin = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("Tentativa de login:", { usuario, senha });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: usuario,
+        password: senha,
+      });
+
+      if (error) {
+        toast({ title: "Erro no login", description: error.message });
+        return;
+      }
+
+      if (data?.session) {
+        toast({ title: "Login bem-sucedido" });
+        navigate("/");
+      } else {
+        toast({ title: "Login", description: "Verifique suas credenciais." });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro no login", description: err?.message ?? String(err) });
+    }
   };
 
   return (
