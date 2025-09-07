@@ -56,9 +56,44 @@ export default function Login() {
             .single();
 
           if (profileError) {
-            console.error("profiles fetch error:", profileError);
+            try {
+              console.error("profiles fetch error:", JSON.stringify(profileError));
+            } catch (e) {
+              console.error("profiles fetch error (unable to stringify):", profileError);
+            }
 
-            // Fallback: try to get user info from auth
+            // Try a single retry to fetch the profile
+            const { data: profileRetry, error: profileRetryError } = await supabase
+              .from("profiles")
+              .select("perfil")
+              .eq("id", userId)
+              .limit(1)
+              .single();
+
+            if (!profileRetryError && profileRetry) {
+              handleRedirectByRole(profileRetry.perfil);
+              return;
+            }
+
+            // Attempt to create a minimal profile row if permissions allow
+            try {
+              const upsertPayload = { id: userId, nome: data.user?.email ?? "", perfil: "funcionario", ativo: true };
+              const { error: upsertErr } = await supabase.from("profiles").upsert(upsertPayload);
+              if (!upsertErr) {
+                console.info("profiles upsert succeeded, defaulting role to 'funcionario'");
+                handleRedirectByRole("funcionario");
+                return;
+              }
+              try {
+                console.error("profiles upsert error:", JSON.stringify(upsertErr));
+              } catch (e) {
+                console.error("profiles upsert error:", upsertErr);
+              }
+            } catch (e) {
+              console.error("profiles upsert threw:", e);
+            }
+
+            // Fallback: try to get user info from auth metadata
             const { data: authUserData, error: getUserErr } = await supabase.auth.getUser();
             if (getUserErr) {
               console.error("auth.getUser error:", getUserErr);
@@ -148,7 +183,7 @@ export default function Login() {
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   className="w-full rounded-md border border-sis-border bg-white px-3 py-2 font-roboto text-sm text-sis-secondary-text placeholder:text-sis-secondary-text focus:border-sis-blue focus:outline-none focus:ring-1 focus:ring-sis-blue xl:h-[37px] xl:px-3 xl:py-2"
-                  placeholder="••••��••"
+                  placeholder="•••••••"
                 />
               </div>
 
