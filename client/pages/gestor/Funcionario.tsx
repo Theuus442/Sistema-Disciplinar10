@@ -64,7 +64,7 @@ export default function FuncionarioPage() {
     <div className="flex h-screen bg-sis-bg-light">
       <Sidebar onSair={handleSair} />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={() => navigate("/gestor/registrar")} />
+        <Header onRegistrarDesvio={() => navigate("/gestor/registrar")} userType="gestor" />
         <div className="flex-1 overflow-auto p-6">
           <div className="mx-auto max-w-6xl space-y-6">
             {!funcionario ? (
