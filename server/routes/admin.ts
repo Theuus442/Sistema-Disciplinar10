@@ -18,10 +18,33 @@ export const listProfiles: RequestHandler = async (_req, res) => {
     if (error) return res.status(400).json({ error: error.message });
 
     const rows = Array.isArray(data) ? data : [];
+
+    // Fetch emails from auth.users to guarantee the real email (in case profiles.email is missing)
+    const emailMap = new Map<string, string>();
+    try {
+      let page = 1;
+      const perPage = 1000;
+      // Loop through all pages to build a complete map of user.id -> email
+      // If listUsers fails for any reason, we gracefully fallback to profiles.email
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data: usersData, error: usersErr } = await admin.auth.admin.listUsers({ page, perPage } as any);
+        if (usersErr) break;
+        const users = usersData?.users ?? [];
+        for (const u of users) {
+          if (u && (u as any).id && (u as any).email) {
+            emailMap.set((u as any).id, (u as any).email);
+          }
+        }
+        if (users.length < perPage) break;
+        page += 1;
+      }
+    } catch {}
+
     const normalized = rows.map((p: any) => ({
       id: p.id,
       nome: p.nome ?? "",
-      email: p.email ?? "",
+      email: (p.email ?? emailMap.get(p.id) ?? ""),
       perfil: p.perfil ?? "funcionario",
       ativo: p.ativo ?? true,
       criadoEm: p.created_at ?? new Date().toISOString(),
