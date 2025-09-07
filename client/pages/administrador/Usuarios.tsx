@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { fetchUsers, updateProfile, type PerfilUsuario } from "@/lib/api";
+import { updateProfile, type PerfilUsuario } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
 export default function UsuariosAdminPage() {
