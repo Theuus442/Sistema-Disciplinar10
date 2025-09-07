@@ -26,8 +26,9 @@ export default function FuncionariosListaPage() {
       .then((data) => {
         if (mounted && data) setEmployees(data as any);
       })
-      .catch(() => {
-        // keep mocks on error
+      .catch((err) => {
+        console.error(err);
+        setEmployees([]);
       });
     return () => {
       mounted = false;
