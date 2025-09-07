@@ -156,7 +156,7 @@ export default function UsuariosAdminPage() {
           <div className="mx-auto max-w-7xl space-y-6">
             <div>
               <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Gerenciamento de Usuários</h1>
-              <p className="font-roboto text-sm text-sis-secondary-text">Administre perfis, status de acesso e cadastre novos usu��rios.</p>
+              <p className="font-roboto text-sm text-sis-secondary-text">Administre perfis, status de acesso e cadastre novos usuários.</p>
             </div>
 
             <Card className="border-sis-border bg-white">
