@@ -130,9 +130,9 @@ export default function Relatorios() {
       d.classificacao,
       d.dataAbertura,
       d.status,
-      d.legalDecisionResult ?? "",
-      d.legalDecisionMeasure ?? "",
-      d.decisionDate ?? "",
+      d.status,
+      d.resolucao ?? "",
+      d.dataAbertura,
     ]);
     const csv = [cabecalho, ...linhas]
       .map((r) => r.map((c) => `"${String(c).replace(/\"/g, '""')}"`).join(","))
