@@ -119,6 +119,8 @@ export default function SidebarJuridico({ onSair }: SidebarJuridicoProps) {
                 if (item.id === "dashboard") navigate("/juridico");
                 if (item.id === "processos-analise") navigate("/juridico/processos/aguardando");
                 if (item.id === "todos-processos") navigate("/juridico/processos/todos");
+                if (item.id === "relatorios") navigate("/juridico/relatorios");
+                if (item.id === "configuracoes") navigate("/juridico/configuracoes");
               }}
               className={`flex w-full items-center space-x-3 rounded-md px-3 py-2.5 text-left font-roboto text-sm font-medium transition-colors ${
                 activeItem === item.id
