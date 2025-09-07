@@ -112,7 +112,7 @@ export default function ProcessosPage() {
     <div className="flex h-screen bg-sis-bg-light">
       <Sidebar onSair={handleSair} />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={handleRegistrarDesvio} />
+        <Header onRegistrarDesvio={handleRegistrarDesvio} userType="gestor" />
         <div className="flex-1 overflow-auto p-6">
           <div className="mx-auto max-w-7xl">
             <div className="mb-6">
