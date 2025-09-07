@@ -13,13 +13,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  funcionariosMock,
-  type Funcionario,
-  type Classificacao,
-  type StatusProcesso,
-} from "@/data/funcionarios";
 import { fetchEmployeeById } from "@/lib/api";
+
+type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
+type StatusProcesso = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
+type Registro = {
+  id: string;
+  dataOcorrencia: string;
+  tipoDesvio: string;
+  classificacao: Classificacao;
+  medidaAplicada: string;
+  status: StatusProcesso;
+};
+type Funcionario = {
+  id: string;
+  nomeCompleto: string;
+  cargo: string;
+  setor: string;
+  gestorDireto: string;
+  historico: Registro[];
+};
 
 const getClassificacaoClasses = (c: Classificacao) => {
   switch (c) {
