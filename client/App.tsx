@@ -14,6 +14,7 @@ import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
 import GestorRegistrarDesvio from "./pages/gestor/GestorRegistrarDesvio";
 import ProcessosPage from "./pages/gestor/Processos";
 import ProcessoAcompanhamento from "./pages/gestor/ProcessoAcompanhamento";
+import FuncionarioPage from "./pages/gestor/Funcionario";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,8 @@ const App = () => (
           <Route path="/gestor/registrar" element={<GestorRegistrarDesvio />} />
           <Route path="/gestor/processos" element={<ProcessosPage />} />
           <Route path="/gestor/processos/:id" element={<ProcessoAcompanhamento />} />
+          <Route path="/gestor/funcionarios" element={<FuncionarioPage />} />
+          <Route path="/gestor/funcionarios/:id" element={<FuncionarioPage />} />
           {/* ADICIONE TODAS AS ROTAS PERSONALIZADAS ACIMA DA ROTA CATCH-ALL "*" */}
           <Route path="*" element={<NaoEncontrado />} />
         </Routes>
