@@ -33,7 +33,7 @@ export default function RevisaoProcessoJuridico() {
     return () => { mounted = false; };
   }, [idProcesso]);
 
-  const aoFinalizar = () => {
+  const aoFinalizar = async () => {
     if (!decisao) {
       toast({ title: "Selecione o Resultado da Análise", description: "Campo obrigatório." });
       return;
@@ -43,17 +43,22 @@ export default function RevisaoProcessoJuridico() {
       return;
     }
 
-    // eslint-disable-next-line no-console
-    console.log({
-      id: idProcesso,
-      parecerJuridico,
-      arquivosEnviados: arquivosEnviados.map((f) => f.name),
-      decisao,
-      medidaRecomendada: decisao === "Aplicar Medida Disciplinar" ? medidaRecomendada : undefined,
-    });
+    const resolucao =
+      decisao === "Arquivar Processo"
+        ? "Arquivado"
+        : decisao === "Aplicar Medida Disciplinar"
+        ? `Medida disciplinar: ${medidaRecomendada}`
+        : "Recomendação: Justa Causa Direta";
 
-    toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
-    navegar("/juridico");
+    try {
+      const patch = { status: "Finalizado" as any, resolucao: `${resolucao}${parecerJuridico ? ` — Parecer: ${parecerJuridico}` : ""}` };
+      const { updateProcess } = await import("@/lib/api");
+      await updateProcess(idProcesso, patch as any);
+      toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
+      navegar("/juridico");
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar decisão", description: e?.message || String(e) });
+    }
   };
 
   const aoSair = () => {
