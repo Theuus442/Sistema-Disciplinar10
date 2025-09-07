@@ -102,7 +102,7 @@ export default function Header({ onRegistrarDesvio, userType = "gestor", placeho
               type="text"
               value={buscaTexto}
               onChange={(e) => setBuscaTexto(e.target.value)}
-              placeholder="Buscar processos ou funcionários..."
+              placeholder={getPlaceholder()}
               className="ml-3 flex-1 font-roboto text-sm text-sis-dark-text placeholder:text-opacity-40 placeholder:text-sis-dark-text focus:outline-none"
             />
           </div>
