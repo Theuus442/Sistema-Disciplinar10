@@ -26,6 +26,7 @@ import {
   type Classificacao,
   type StatusAtual,
 } from "@/data/processos";
+import { fetchProcesses } from "@/lib/api";
 
 const getClassificacaoClasses = (c: Classificacao) => {
   switch (c) {
@@ -56,6 +57,19 @@ const getStatusClasses = (s: StatusAtual) => {
 export default function ProcessosPage() {
   const navigate = useNavigate();
   const [busca, setBusca] = useState("");
+  const [processes, setProcesses] = useState<ProcessoItem[]>(processosMock);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchProcesses()
+      .then((data) => {
+        if (mounted && data) setProcesses(data as any);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
   const [filtroClassificacao, setFiltroClassificacao] =
     useState<Classificacao | "todas">("todas");
@@ -64,9 +78,9 @@ export default function ProcessosPage() {
   );
 
   const tiposDisponiveis = useMemo(() => {
-    const set = new Set(processosMock.map((p) => p.tipoDesvio));
+    const set = new Set(processes.map((p) => p.tipoDesvio));
     return ["todos", ...Array.from(set)];
-  }, []);
+  }, [processes]);
 
   const classificacoes: (Classificacao | "todas")[] = [
     "todas",
@@ -85,7 +99,7 @@ export default function ProcessosPage() {
   ];
 
   const filtrados = useMemo<ProcessoItem[]>(() => {
-    return processosMock.filter((p) => {
+    return processes.filter((p) => {
       const buscaOk =
         busca.trim().length === 0 ||
         p.funcionario.toLowerCase().includes(busca.toLowerCase()) ||

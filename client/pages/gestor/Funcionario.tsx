@@ -19,6 +19,7 @@ import {
   type Classificacao,
   type StatusProcesso,
 } from "@/data/funcionarios";
+import { fetchEmployeeById } from "@/lib/api";
 
 const getClassificacaoClasses = (c: Classificacao) => {
   switch (c) {
@@ -51,9 +52,21 @@ export default function FuncionarioPage() {
   const params = useParams<{ id?: string }>();
   const id = params.id;
 
-  const funcionario: Funcionario | undefined = useMemo(() => {
-    if (!id) return undefined;
-    return funcionariosMock.find((f) => f.id === id);
+  const [funcionario, setFuncionario] = useState<Funcionario | undefined>(undefined);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!id) return;
+    fetchEmployeeById(id)
+      .then((f) => {
+        if (mounted) setFuncionario(f as any);
+      })
+      .catch(() => {
+        // ignore
+      });
+    return () => {
+      mounted = false;
+    };
   }, [id]);
 
   const handleSair = () => {

@@ -1,12 +1,121 @@
 import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 export default function Login() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
 
-  const enviarLogin = (e: FormEvent) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  function handleRedirectByRole(role?: string) {
+    const r = role?.toLowerCase?.();
+    const path = r === "administrador" ? "/administrador" : r === "gestor" ? "/gestor" : r === "juridico" ? "/juridico" : "/";
+    try {
+      console.info("handleRedirectByRole", { role, normalized: r, path });
+      toast({ title: "Login bem-sucedido", description: `Redirecionando para ${path}` });
+      // use replace to avoid back-navigation to login
+      navigate(path, { replace: true });
+    } catch (e) {
+      console.error("redirect error:", e);
+    }
+  }
+
+  const enviarLogin = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("Tentativa de login:", { usuario, senha });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: usuario,
+        password: senha,
+      });
+
+      if (error) {
+        toast({ title: "Erro no login", description: error.message });
+        return;
+      }
+
+      if (data?.session) {
+        // fetch profile to determine role
+        try {
+          const userId = data.user?.id;
+          const attemptedEmail = usuario;
+
+          // Log auth user state
+          const { data: authUserData, error: getUserErr } = await supabase.auth.getUser();
+          console.info("auth.getUser result:", { authUserData, getUserErr });
+
+          // Primary: try to fetch profile by id
+          const { data: profileById, error: profileByIdError } = await supabase
+            .from("profiles")
+            .select("id, perfil, nome")
+            .eq("id", userId)
+            .maybeSingle();
+
+          if (profileByIdError) {
+            try {
+              console.error("profiles fetch error:", JSON.stringify(profileByIdError));
+            } catch (e) {
+              console.error("profiles fetch error (unable to stringify):", profileByIdError);
+            }
+          }
+
+          if (profileById) {
+            console.info("profile found by id:", profileById);
+            handleRedirectByRole(profileById.perfil);
+            return;
+          }
+
+          // If not found by id, try searching by name/email fragment
+          try {
+            const nameFragment = attemptedEmail?.split("@")[0] ?? "";
+            if (nameFragment) {
+              const { data: profileByName, error: profileByNameError } = await supabase
+                .from("profiles")
+                .select("id, perfil, nome")
+                .ilike("nome", `%${nameFragment}%`)
+                .limit(1);
+
+              if (profileByNameError) {
+                console.error("profiles search by name error:", profileByNameError);
+              }
+
+              if (profileByName && profileByName.length > 0) {
+                console.info("profile found by name/email fragment:", profileByName[0]);
+                handleRedirectByRole(profileByName[0].perfil);
+                return;
+              }
+            }
+          } catch (e) {
+            console.error("search by name fallback threw:", e);
+          }
+
+          // Fallback to role in auth metadata
+          if (authUserData?.user) {
+            const roleFromMetadata = (authUserData.user as any)?.user_metadata?.perfil || (authUserData.user as any)?.user_metadata?.role;
+            if (roleFromMetadata) {
+              console.info("role found in auth user metadata:", roleFromMetadata);
+              handleRedirectByRole(roleFromMetadata as string);
+              return;
+            }
+          }
+
+          // Final fallback: default to funcionario
+          console.info("No profile or metadata role found — defaulting to 'funcionario'");
+          handleRedirectByRole("funcionario");
+          return;
+        } catch (err) {
+          console.error("error determining profile:", err);
+          toast({ title: "Login bem-sucedido" });
+          navigate("/");
+        }
+      } else {
+        toast({ title: "Login", description: "Verifique suas credenciais." });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro no login", description: err?.message ?? String(err) });
+    }
   };
 
   return (

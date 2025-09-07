@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { processosMock } from "@/data/processos";
+import { fetchProcessById } from "@/lib/api";
 
 export default function ProcessoAcompanhamento() {
   const navigate = useNavigate();
