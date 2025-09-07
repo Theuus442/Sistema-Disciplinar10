@@ -22,7 +22,7 @@ export default function UsuariosAdminPage() {
   const [busca, setBusca] = useState("");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [abrirNovo, setAbrirNovo] = useState(false);
-  const [novo, setNovo] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
+  const [novo, setNovo] = useState<{ nome: string; email: string; password: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
 
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
