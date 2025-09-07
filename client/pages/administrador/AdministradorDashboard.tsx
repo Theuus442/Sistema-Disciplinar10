@@ -9,7 +9,7 @@ import AtividadesRecentes from "@/components/AtividadesRecentes";
 import AcoesRapidas from "@/components/AcoesRapidas";
 
 export default function AdministradorDashboard() {
-  const navigate = useNavigate();
+  const navigate = Router.useNavigate();
 
   const handleSair = () => {
     navigate("/");
