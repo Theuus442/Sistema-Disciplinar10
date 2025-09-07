@@ -13,7 +13,7 @@ const dadosAtividades: Atividade[] = [
 
 export default function AtividadesRecentes() {
   return (
-    <div className="h-[330px] w-[363px] rounded-[10px] bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
+    <div className="min-h-[330px] w-full max-w-[363px] rounded-[10px] bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
       {/* Header */}
       <div className="mb-6">
         <h3 className="font-roboto text-lg font-bold text-sis-dark-text">
