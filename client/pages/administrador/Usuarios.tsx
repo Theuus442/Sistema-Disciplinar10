@@ -54,9 +54,26 @@ export default function UsuariosAdminPage() {
     }
   };
 
-  const criarUsuario = () => {
-    setAbrirNovo(false);
-    toast({ title: "Criação indisponível", description: "Criar usuários requer a API Admin do Supabase (service role)." });
+  const criarUsuario = async () => {
+    if (!novo.nome || !novo.email || !novo.password || novo.password.length < 6) {
+      toast({ title: "Preencha nome, e-mail e senha (mín. 6)" });
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: novo.nome, email: novo.email, password: novo.password, perfil: novo.perfil, ativo: novo.ativo }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Erro ao criar usuário");
+      setUsuarios((prev) => [data as any, ...prev]);
+      setAbrirNovo(false);
+      setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
+      toast({ title: "Usuário criado", description: `${data.nome} (${data.perfil})` });
+    } catch (e: any) {
+      toast({ title: "Erro ao criar usuário", description: e?.message || String(e) });
+    }
   };
 
   const handleSair = () => navigate("/");
