@@ -23,11 +23,13 @@ export default function AdministradorDashboard() {
 
       {/* Layout principal */}
       <div className="flex">
-        {/* Sidebar */}
-        <SidebarAdministrador onSair={handleSair} />
+        {/* Sidebar - Oculta em mobile, visível em desktop */}
+        <div className="hidden lg:block">
+          <SidebarAdministrador onSair={handleSair} />
+        </div>
 
         {/* Conteúdo principal */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-3 sm:p-6">
           {/* Título principal */}
           <div className="mb-6">
             <h1 className="font-open-sans text-[30px] font-bold leading-[36px] text-sis-dark-text">
