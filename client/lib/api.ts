@@ -94,7 +94,6 @@ export async function fetchProcessById(id: string) {
 }
 
 export async function fetchUsers() {
-  // Supabase public anon key cannot list auth.users; use profiles table as source of truth
   const { data: profiles } = await supabase.from<any>("profiles").select("*");
   return (profiles || []).map((p) => ({
     id: p.id,
@@ -105,4 +104,15 @@ export async function fetchUsers() {
     criadoEm: p.created_at ?? new Date().toISOString(),
     ultimoAcesso: null,
   }));
+}
+
+export type PerfilUsuario = "administrador" | "gestor" | "juridico" | "funcionario";
+export async function updateProfile(id: string, patch: { nome?: string; perfil?: PerfilUsuario; ativo?: boolean }) {
+  const { error } = await supabase.from("profiles").update(patch as any).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateProcess(id: string, patch: Partial<ProcessoAPI>) {
+  const { error } = await supabase.from("processes").update(patch as any).eq("id", id);
+  if (error) throw error;
 }
