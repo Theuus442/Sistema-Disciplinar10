@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { legalCasesAwaitingMock, type LegalReviewStatus } from "@/data/legal";
+import { fetchProcesses } from "@/lib/api";
 
-function getLegalStatusClasses(s: LegalReviewStatus) {
+type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
+type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
+function getStatusClasses(s: StatusAtual) {
   switch (s) {
     case "Aguardando Parecer Jurídico":
       return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
