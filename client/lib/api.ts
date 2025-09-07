@@ -74,6 +74,7 @@ export async function fetchProcesses() {
     tipoDesvio: p.tipo_desvio ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
     dataAbertura: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
+    createdAt: p.created_at ?? null,
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
     resolucao: p.resolucao ?? "",
   }));
@@ -90,6 +91,7 @@ export async function fetchProcessById(id: string) {
     tipoDesvio: p.tipo_desvio ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
     dataAbertura: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
+    createdAt: p.created_at ?? null,
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
     resolucao: p.resolucao ?? "",
   };
