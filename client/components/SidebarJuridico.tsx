@@ -107,8 +107,16 @@ export default function SidebarJuridico({ onSair }: SidebarJuridicoProps) {
   ];
 
   return (
-    <div className="flex h-full w-64 flex-col border-r border-sis-border bg-white">
+    <div className="flex h-full w-56 md:w-64 flex-col border-r border-sis-border bg-white">
       <div className="flex flex-1 flex-col p-2">
+        <div className="mb-2 flex items-center px-2 py-2">
+          <svg className="h-6 w-6 flex-shrink-0" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" stroke="white" />
+            <path d="M9.475 16.1803C9.66665 15.4805 10.3923 15.0629 11.0921 15.2545C11.7919 15.4461 12.2096 16.1718 12.018 16.8716L11.001 20.6633C10.9196 20.9676 10.6246 21.1479 10.3203 21.0665L9.34354 20.8036C9.03922 20.7222 8.85886 20.4272 8.94028 20.1229L9.475 16.1803Z" fill="#0F74C7" />
+            <path d="M13.9681 14.2019C14.397 13.773 15.0855 13.773 15.5144 14.2019L18.399 17.0864C18.6395 17.3269 18.6395 17.7163 18.399 17.9569L17.6121 18.7438C17.3716 18.9843 16.9823 18.9843 16.7418 18.7438L13.8573 15.8593C13.4283 15.4304 13.4283 14.742 13.8573 14.3131Z" fill="#0F74C7" />
+          </svg>
+          <h1 className="ml-2 font-open-sans text-lg font-bold italic text-sis-blue">SisDisciplinar</h1>
+        </div>
         {/* Menu de Navegação */}
         <div className="mb-auto space-y-1 p-2">
           {menuItems.map((item) => (

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
+
 import SidebarJuridico from "@/components/SidebarJuridico";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -58,8 +58,7 @@ export default function ProcessosAguardandoAnalise() {
     <div className="flex h-screen bg-sis-bg-light">
       <SidebarJuridico onSair={aoSair} />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={() => navegar("/gestor/registrar")} userType="juridico" />
-        <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-7xl space-y-6">
             <div className="flex items-end justify-between gap-4">
               <div>

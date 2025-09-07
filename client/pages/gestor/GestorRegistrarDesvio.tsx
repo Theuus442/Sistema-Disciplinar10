@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ChangeEvent } from "react";
-import Header from "@/components/Header";
+
 import Sidebar from "@/components/Sidebar";
 import { toast } from "sonner";
 
@@ -56,8 +56,7 @@ export default function GestorRegistrarDesvio() {
     <div className="flex h-screen bg-sis-bg-light">
       <Sidebar />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={() => {}} />
-        <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-5xl">
             <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Registrar Desvio</h1>
             <p className="mb-8 font-roboto text-sis-secondary-text">

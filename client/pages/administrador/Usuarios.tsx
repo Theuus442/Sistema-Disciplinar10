@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
+
 import SidebarAdministrador from "@/components/SidebarAdministrador";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { fetchUsers, updateProfile, type PerfilUsuario } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 export default function UsuariosAdminPage() {
   const navigate = useNavigate();
@@ -34,6 +35,18 @@ export default function UsuariosAdminPage() {
       .then((list) => { if (mounted) setUsuarios(list as any); })
       .catch(() => {});
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("profiles-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+        fetchUsers().then((list) => setUsuarios(list as any)).catch(() => {});
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filtrados = useMemo(() => {
@@ -83,7 +96,9 @@ export default function UsuariosAdminPage() {
       }
 
       const data = payload ?? {};
-      setUsuarios((prev) => [data as any, ...prev]);
+      // Sincroniza lista consultando o banco para refletir políticas e mapeamentos
+      const lista = await fetchUsers();
+      setUsuarios(lista as any);
       setAbrirNovo(false);
       setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
       toast({ title: "Usuário criado", description: `${data.nome} (${data.perfil})` });
@@ -118,10 +133,9 @@ export default function UsuariosAdminPage() {
 
   return (
     <div className="flex h-screen bg-sis-bg-light">
-      <div className="hidden lg:block"><SidebarAdministrador onSair={handleSair} /></div>
+      <SidebarAdministrador onSair={handleSair} />
       <div className="flex flex-1 flex-col">
-        <Header userType="administrador" placeholder="Buscar usuários..." />
-        <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-7xl space-y-6">
             <div>
               <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Gerenciamento de Usuários</h1>

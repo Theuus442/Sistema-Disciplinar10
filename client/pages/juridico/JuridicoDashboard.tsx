@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
+
 import SidebarJuridico from "@/components/SidebarJuridico";
 import MetricCard from "@/components/MetricCard";
 import { Badge } from "@/components/ui/badge";
@@ -196,11 +196,9 @@ export default function JuridicoDashboard() {
 
       {/* Conteúdo Principal */}
       <div className="flex flex-1 flex-col">
-        {/* Header */}
-        <Header onRegistrarDesvio={handleRegistrarDesvio} userType="juridico" />
 
         {/* Dashboard Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-7xl">
             {/* Título Principal */}
             <div className="mb-8">
