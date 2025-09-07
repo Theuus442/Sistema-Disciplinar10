@@ -40,6 +40,19 @@ const getClassificacaoClasses = (c: Classificacao) => {
   }
 };
 
+const getStatusClasses = (s: StatusAtual) => {
+  switch (s) {
+    case "Em Análise":
+      return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
+    case "Sindicância":
+      return "bg-status-blue-bg border-status-blue-border text-status-blue-text";
+    case "Aguardando Assinatura":
+      return "bg-status-purple-bg border-status-purple-border text-status-purple-text";
+    case "Finalizado":
+      return "bg-status-green-bg border-status-green-border text-status-green-text";
+  }
+};
+
 export default function ProcessosPage() {
   const navigate = useNavigate();
   const [busca, setBusca] = useState("");
@@ -189,7 +202,11 @@ export default function ProcessosPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{p.dataAbertura}</TableCell>
-                      <TableCell>{p.status}</TableCell>
+                      <TableCell>
+                        <Badge className={`border ${getStatusClasses(p.status)}`}>
+                          {p.status}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="outline"
