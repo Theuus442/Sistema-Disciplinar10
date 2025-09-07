@@ -3,8 +3,8 @@ import Header from "@/components/Header";
 import SidebarJuridico from "@/components/SidebarJuridico";
 import MetricCard from "@/components/MetricCard";
 import { Badge } from "@/components/ui/badge";
-import { legalCasesAwaitingMock, type LegalReviewStatus } from "@/data/legal";
 import { Button } from "@/components/ui/button";
+import { fetchProcesses } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -14,11 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  processosJuridicosMock,
-  atividadesRecentesMock,
-  type StatusJuridico,
-} from "@/data/juridico";
+type StatusJuridico = "Em Revisão" | "Pendente" | "Finalizado" | "Aguardando Análise";
 
 const getStatusJuridicoClasses = (s: StatusJuridico) => {
   switch (s) {
@@ -33,9 +29,10 @@ const getStatusJuridicoClasses = (s: StatusJuridico) => {
   }
 };
 
-function getLegalStatusClasses(s: LegalReviewStatus) {
+type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
+function getStatusClasses(s: StatusAtual) {
   switch (s) {
-    case "Aguardando Parecer Jurídico":
+    case "Em Análise":
       return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
     case "Em Revisão":
       return "bg-status-blue-bg border-status-blue-border text-status-blue-text";
@@ -46,6 +43,15 @@ function getLegalStatusClasses(s: LegalReviewStatus) {
 
 function AwaitingLegalTable() {
   const navigate = useNavigate();
+  const [processos, setProcessos] = useState<{ id: string; funcionario: string; tipoDesvio: string; classificacao: string; dataAbertura: string; status: StatusAtual; }[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    fetchProcesses().then((data) => {
+      if (mounted) setProcessos((data as any) || []);
+    });
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="rounded-md border border-sis-border">
       <Table>
@@ -55,23 +61,23 @@ function AwaitingLegalTable() {
             <TableHead className="w-[20%]">Funcionário</TableHead>
             <TableHead className="w-[18%]">Tipo de Desvio</TableHead>
             <TableHead className="w-[14%]">Classificação</TableHead>
-            <TableHead className="w-[16%]">Data de Encaminhamento</TableHead>
+            <TableHead className="w-[16%]">Data de Abertura</TableHead>
             <TableHead className="w-[10%]">Status</TableHead>
             <TableHead className="w-[8%]">Ação</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {legalCasesAwaitingMock
-            .filter((c) => c.status === "Aguardando Parecer Jurídico")
+          {processos
+            .filter((c) => c.status === "Sindicância")
             .map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.id}</TableCell>
-                <TableCell className="truncate">{c.employeeName}</TableCell>
-                <TableCell className="truncate">{c.deviationType}</TableCell>
-                <TableCell>{c.classification}</TableCell>
-                <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+                <TableCell className="truncate">{c.funcionario}</TableCell>
+                <TableCell className="truncate">{c.tipoDesvio}</TableCell>
+                <TableCell>{c.classificacao}</TableCell>
+                <TableCell className="text-sis-secondary-text">{c.dataAbertura}</TableCell>
                 <TableCell>
-                  <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+                  <Badge className={`border ${getStatusClasses(c.status)}`}>{c.status}</Badge>
                 </TableCell>
                 <TableCell>
                   <Button size="sm" onClick={() => navigate(`/juridico/processos/${c.id}`)}>
@@ -257,17 +263,8 @@ export default function JuridicoDashboard() {
                     <CardTitle className="text-xl">Atividades Recentes</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-6">
-                      {atividadesRecentesMock.map((atividade) => (
-                        <div key={atividade.id} className="space-y-2">
-                          <p className="font-roboto text-sm text-sis-dark-text leading-5">
-                            {atividade.descricao}
-                          </p>
-                          <p className="font-roboto text-xs text-sis-secondary-text">
-                            {atividade.tempo}
-                          </p>
-                        </div>
-                      ))}
+                    <div className="space-y-6 text-sm text-sis-secondary-text">
+                      <p>Nenhuma atividade recente.</p>
                     </div>
                   </CardContent>
                 </Card>
