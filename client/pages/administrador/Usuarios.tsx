@@ -29,11 +29,25 @@ export default function UsuariosAdminPage() {
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
   const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
 
+  const carregarUsuarios = async () => {
+    const res = await fetch("/api/admin/users");
+    const rows = (await res.json()) as any[];
+    setUsuarios(
+      (rows || []).map((p) => ({
+        id: p.id,
+        nome: p.nome ?? "",
+        email: p.email ?? ((p.nome ? p.nome.toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com"),
+        perfil: (p.perfil ?? "funcionario") as PerfilUsuario,
+        ativo: p.ativo ?? true,
+        criadoEm: p.created_at ?? new Date().toISOString(),
+        ultimoAcesso: null,
+      }))
+    );
+  };
+
   useEffect(() => {
     let mounted = true;
-    fetchUsers()
-      .then((list) => { if (mounted) setUsuarios(list as any); })
-      .catch(() => {});
+    carregarUsuarios().catch(() => {});
     return () => { mounted = false; };
   }, []);
 
