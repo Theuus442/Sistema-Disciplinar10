@@ -23,11 +23,11 @@ export interface ProcessoAPI {
 }
 
 export async function fetchEmployees() {
-  const { data: employees, error: empErr } = await supabase.from<FuncionarioAPI>("employees").select("*");
+  const { data: employees, error: empErr } = await supabase.from("employees").select("*");
   if (empErr) throw empErr;
 
-  const { data: processes } = await supabase.from<ProcessoAPI>("processes").select("*");
-  const { data: profiles } = await supabase.from<any>("profiles").select("*");
+  const { data: processes } = await supabase.from("processes").select("*");
+  const { data: profiles } = await supabase.from("profiles").select("*");
 
   const profilesMap = new Map<string, any>();
   profiles?.forEach((p) => profilesMap.set(p.id, p));
@@ -55,7 +55,7 @@ export async function fetchEmployees() {
 }
 
 export async function fetchEmployeeById(matriculaOrId: string) {
-  const { data: employees } = await supabase.from<FuncionarioAPI>("employees").select("*").or(`matricula.eq.${matriculaOrId},id.eq.${matriculaOrId}`);
+  const { data: employees } = await supabase.from("employees").select("*").or(`matricula.eq.${matriculaOrId},id.eq.${matriculaOrId}`);
   const emp = employees?.[0];
   if (!emp) return undefined;
   const employeesMapped = await fetchEmployees();
@@ -63,7 +63,7 @@ export async function fetchEmployeeById(matriculaOrId: string) {
 }
 
 export async function fetchProcesses() {
-  const { data: processes } = await supabase.from<ProcessoAPI>("processes").select("*");
+  const { data: processes } = await supabase.from("processes").select("*");
   const { data: employees } = await supabase.from<FuncionarioAPI>("employees").select("*");
   const empMap = new Map<string, string>();
   (employees || []).forEach((e) => empMap.set(e.id, e.nome_completo ?? e.matricula ?? ""));
@@ -83,7 +83,7 @@ export async function fetchProcessById(id: string) {
   const { data: processes } = await supabase.from<ProcessoAPI>("processes").select("*").eq("id", id);
   if (!processes || processes.length === 0) return undefined;
   const p = processes[0];
-  const { data: employee } = await supabase.from<FuncionarioAPI>("employees").select("*").eq("id", p.employee_id).limit(1).single();
+  const { data: employee } = await supabase.from("employees").select("*").eq("id", p.employee_id).limit(1).single();
   return {
     id: p.id,
     funcionario: employee?.nome_completo ?? "",
@@ -96,7 +96,7 @@ export async function fetchProcessById(id: string) {
 }
 
 export async function fetchUsers() {
-  const { data: profiles } = await supabase.from<any>("profiles").select("*");
+  const { data: profiles } = await supabase.from("profiles").select("*");
   return (profiles || []).map((p) => ({
     id: p.id,
     nome: p.nome ?? "",
