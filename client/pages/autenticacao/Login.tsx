@@ -47,13 +47,12 @@ export default function Login() {
         try {
           const userId = data.user?.id;
 
-          // Primary: fetch profile from public.profiles
+          // Primary: fetch profile from public.profiles (use maybeSingle to handle 0 rows)
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("perfil")
             .eq("id", userId)
-            .limit(1)
-            .single();
+            .maybeSingle();
 
           if (profileError) {
             try {
@@ -62,38 +61,7 @@ export default function Login() {
               console.error("profiles fetch error (unable to stringify):", profileError);
             }
 
-            // Try a single retry to fetch the profile
-            const { data: profileRetry, error: profileRetryError } = await supabase
-              .from("profiles")
-              .select("perfil")
-              .eq("id", userId)
-              .limit(1)
-              .single();
-
-            if (!profileRetryError && profileRetry) {
-              handleRedirectByRole(profileRetry.perfil);
-              return;
-            }
-
-            // Attempt to create a minimal profile row if permissions allow
-            try {
-              const upsertPayload = { id: userId, nome: data.user?.email ?? "", perfil: "funcionario", ativo: true };
-              const { error: upsertErr } = await supabase.from("profiles").upsert(upsertPayload);
-              if (!upsertErr) {
-                console.info("profiles upsert succeeded, defaulting role to 'funcionario'");
-                handleRedirectByRole("funcionario");
-                return;
-              }
-              try {
-                console.error("profiles upsert error:", JSON.stringify(upsertErr));
-              } catch (e) {
-                console.error("profiles upsert error:", upsertErr);
-              }
-            } catch (e) {
-              console.error("profiles upsert threw:", e);
-            }
-
-            // Fallback: try to get user info from auth metadata
+            // If there's an error reading profiles (likely RLS), fallback to reading auth metadata
             const { data: authUserData, error: getUserErr } = await supabase.auth.getUser();
             if (getUserErr) {
               console.error("auth.getUser error:", getUserErr);
@@ -110,13 +78,28 @@ export default function Login() {
               return;
             }
 
-            toast({ title: "Login bem-sucedido", description: "Não foi possível obter o perfil do usuário." });
-            navigate("/");
+            // Default to 'funcionario' when profile not accessible
+            handleRedirectByRole("funcionario");
             return;
           }
 
-          const role = profile?.perfil as string | undefined;
-          handleRedirectByRole(role);
+          // If profile is null (no row), prefer role set in auth metadata, otherwise default to 'funcionario'
+          if (!profile) {
+            const { data: authUserData, error: getUserErr } = await supabase.auth.getUser();
+            if (!getUserErr && authUserData?.user) {
+              const roleFromMetadata = (authUserData.user as any)?.user_metadata?.perfil || (authUserData.user as any)?.user_metadata?.role;
+              if (roleFromMetadata) {
+                handleRedirectByRole(roleFromMetadata as string);
+                return;
+              }
+            }
+
+            handleRedirectByRole("funcionario");
+            return;
+          }
+
+          // Normal path: profile exists
+          handleRedirectByRole(profile.perfil);
         } catch (err) {
           console.error("error determining profile:", err);
           toast({ title: "Login bem-sucedido" });
