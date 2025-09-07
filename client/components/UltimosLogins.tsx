@@ -13,7 +13,7 @@ const dadosLogins: LoginUsuario[] = [
 
 export default function UltimosLogins() {
   return (
-    <div className="h-[298px] w-[363px] rounded-[10px] bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
+    <div className="min-h-[298px] w-full max-w-[363px] rounded-[10px] bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
       {/* Header */}
       <div className="mb-6">
         <h3 className="font-roboto text-lg font-bold text-sis-dark-text">
@@ -25,10 +25,10 @@ export default function UltimosLogins() {
       <div className="mb-6 space-y-4">
         {dadosLogins.map((login, index) => (
           <div key={index} className="flex items-center justify-between">
-            <span className="font-roboto text-base text-sis-dark-text">
+            <span className="font-roboto text-base text-sis-dark-text truncate">
               {login.nome}
             </span>
-            <span className="font-roboto text-sm text-sis-secondary-text">
+            <span className="font-roboto text-sm text-sis-secondary-text whitespace-nowrap">
               {login.tempo}
             </span>
           </div>
