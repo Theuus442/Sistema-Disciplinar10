@@ -11,6 +11,7 @@ import NaoEncontrado from "./pages/erros/NaoEncontrado";
 import GestorDashboard from "./pages/gestor/GestorDashboard";
 import AdministradorDashboard from "./pages/administrador/AdministradorDashboard";
 import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
+import LegalCaseReview from "./pages/juridico/LegalCaseReview";
 import GestorRegistrarDesvio from "./pages/gestor/GestorRegistrarDesvio";
 import ProcessosPage from "./pages/gestor/Processos";
 import ProcessoAcompanhamento from "./pages/gestor/ProcessoAcompanhamento";
