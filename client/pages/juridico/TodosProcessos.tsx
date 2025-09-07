@@ -23,10 +23,10 @@ function getStatusClasses(s: StatusAtual) {
   }
 }
 
-const statusOpcoes: ("todos" | LegalReviewStatus)[] = [
+const statusOpcoes: ("todos" | StatusAtual)[] = [
   "todos",
-  "Aguardando Parecer Jurídico",
-  "Em Revisão",
+  "Em Análise",
+  "Sindicância",
   "Finalizado",
 ];
 
