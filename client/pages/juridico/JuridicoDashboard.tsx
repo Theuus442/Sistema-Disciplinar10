@@ -131,7 +131,7 @@ export default function JuridicoDashboard() {
   return (
     <div className="flex h-screen bg-sis-bg-light">
       {/* Sidebar */}
-      <Sidebar onSair={handleSair} />
+      <SidebarJuridico onSair={handleSair} />
 
       {/* Conteúdo Principal */}
       <div className="flex flex-1 flex-col">
