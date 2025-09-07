@@ -34,7 +34,7 @@ function getStatusClasses(s: StatusAtual) {
   switch (s) {
     case "Em Análise":
       return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
-    case "Em Revisão":
+    case "Sindicância":
       return "bg-status-blue-bg border-status-blue-border text-status-blue-text";
     case "Finalizado":
       return "bg-status-green-bg border-status-green-border text-status-green-text";
