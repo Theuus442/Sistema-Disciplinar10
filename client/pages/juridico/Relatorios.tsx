@@ -9,6 +9,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { legalCasesAwaitingMock, type LegalReviewStatus } from "@/data/legal";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
+import { FileText, Clock, CheckCircle2, PieChart as PieChartIcon, BarChart3 } from "lucide-react";
 
 function getLegalStatusClasses(s: LegalReviewStatus) {
   switch (s) {
@@ -63,6 +77,26 @@ export default function Relatorios() {
     const finalizado = dados.filter((d) => d.status === "Finalizado").length;
     return { total, aguardando, revisao, finalizado };
   }, [dados]);
+
+  const distribuicaoStatus = useMemo(
+    () => [
+      { name: "Aguardando", value: metricas.aguardando },
+      { name: "Em Revisão", value: metricas.revisao },
+      { name: "Finalizado", value: metricas.finalizado },
+    ],
+    [metricas],
+  );
+
+  const distribuicaoClassificacao = useMemo(() => {
+    const mapa = new Map<string, number>();
+    dados.forEach((d) => {
+      mapa.set(d.classification, (mapa.get(d.classification) || 0) + 1);
+    });
+    return Array.from(mapa.entries()).map(([name, value]) => ({ name, value }));
+  }, [dados]);
+
+  const CORES_STATUS = ["#F59E0B", "#3B82F6", "#22C55E"]; // amarelo, azul, verde
+  const CORES_CLASS = ["#86EFAC", "#FDE68A", "#FCA5A5", "#F87171"]; // leve, média, grave, gravíssima
 
   const exportarCSV = () => {
     const cabecalho = [
@@ -131,23 +165,96 @@ export default function Relatorios() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
               <Card className="border-sis-border bg-white">
-                <CardHeader><CardTitle>Total de Processos</CardTitle></CardHeader>
-                <CardContent><p className="text-3xl font-bold">{metricas.total}</p></CardContent>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total de Processos</CardTitle>
+                  <FileText className="h-4 w-4 text-sis-blue" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{metricas.total}</div>
+                  <p className="text-xs text-sis-secondary-text">Período selecionado</p>
+                </CardContent>
               </Card>
               <Card className="border-sis-border bg-white">
-                <CardHeader><CardTitle>Aguardando Parecer</CardTitle></CardHeader>
-                <CardContent><p className="text-3xl font-bold">{metricas.aguardando}</p></CardContent>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Aguardando Parecer</CardTitle>
+                  <Clock className="h-4 w-4 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{metricas.aguardando}</div>
+                  <p className="text-xs text-sis-secondary-text">Casos pendentes de análise</p>
+                </CardContent>
               </Card>
               <Card className="border-sis-border bg-white">
-                <CardHeader><CardTitle>Finalizados</CardTitle></CardHeader>
-                <CardContent><p className="text-3xl font-bold">{metricas.finalizado}</p></CardContent>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Em Revisão</CardTitle>
+                  <PieChartIcon className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{metricas.revisao}</div>
+                  <p className="text-xs text-sis-secondary-text">Sindicâncias em andamento</p>
+                </CardContent>
+              </Card>
+              <Card className="border-sis-border bg-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Finalizados</CardTitle>
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{metricas.finalizado}</div>
+                  <p className="text-xs text-sis-secondary-text">Com decisão registrada</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <Card className="border-sis-border bg-white">
+                <CardHeader className="flex items-center justify-between">
+                  <CardTitle>Distribuição por Status</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-sis-secondary-text" />
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={distribuicaoStatus} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={2}>
+                        {distribuicaoStatus.map((_, idx) => (
+                          <Cell key={idx} fill={CORES_STATUS[idx % CORES_STATUS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              <Card className="border-sis-border bg-white">
+                <CardHeader className="flex items-center justify-between">
+                  <CardTitle>Processos por Classificação</CardTitle>
+                  <PieChartIcon className="h-4 w-4 text-sis-secondary-text" />
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={distribuicaoClassificacao}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {distribuicaoClassificacao.map((_, idx) => (
+                          <Cell key={idx} fill={CORES_CLASS[idx % CORES_CLASS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
               </Card>
             </div>
 
             <Card className="border-sis-border bg-white">
-              <CardHeader><CardTitle>Detalhamento</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Detalhamento ({dados.length})</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="rounded-md border border-sis-border">
                   <Table>
@@ -163,19 +270,29 @@ export default function Relatorios() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dados.map((c) => (
-                        <TableRow key={c.id}>
-                          <TableCell className="font-medium">{c.id}</TableCell>
-                          <TableCell className="truncate">{c.employeeName}</TableCell>
-                          <TableCell className="truncate">{c.deviationType}</TableCell>
-                          <TableCell>{c.classification}</TableCell>
-                          <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
-                          <TableCell><Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge></TableCell>
-                          <TableCell>
-                            <Button size="sm" onClick={() => navegar(`/juridico/processos/${c.id}`)}>Abrir</Button>
+                      {dados.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="py-10 text-center text-sis-secondary-text">
+                            Nenhum processo encontrado para os filtros selecionados.
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        dados.map((c) => (
+                          <TableRow key={c.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{c.id}</TableCell>
+                            <TableCell className="truncate">{c.employeeName}</TableCell>
+                            <TableCell className="truncate">{c.deviationType}</TableCell>
+                            <TableCell>{c.classification}</TableCell>
+                            <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+                            <TableCell>
+                              <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button size="sm" onClick={() => navegar(`/juridico/processos/${c.id}`)}>Abrir</Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
