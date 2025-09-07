@@ -2,10 +2,44 @@ import { useState } from "react";
 
 interface HeaderProps {
   onRegistrarDesvio?: () => void;
+  userType?: "gestor" | "juridico" | "administrador";
+  placeholder?: string;
 }
 
-export default function Header({ onRegistrarDesvio }: HeaderProps) {
+export default function Header({ onRegistrarDesvio, userType = "gestor", placeholder }: HeaderProps) {
   const [buscaTexto, setBuscaTexto] = useState("");
+
+  const getMenuItems = () => {
+    switch (userType) {
+      case "juridico":
+        return [
+          { label: "Home", active: true },
+          { label: "Processos", active: false },
+          { label: "Relatórios", active: false },
+          { label: "Configurações", active: false },
+        ];
+      case "administrador":
+        return [
+          { label: "Home", active: true },
+          { label: "Processos", active: false },
+          { label: "Funcionários", active: false },
+          { label: "Relatórios", active: false },
+        ];
+      default: // gestor
+        return [
+          { label: "Home", active: true },
+          { label: "Processos", active: false },
+          { label: "Funcionários", active: false },
+        ];
+    }
+  };
+
+  const getPlaceholder = () => {
+    if (placeholder) return placeholder;
+    return userType === "juridico"
+      ? "Buscar processos jurídicos..."
+      : "Buscar processos ou funcionários...";
+  };
 
   return (
     <div className="flex h-16 w-full items-center justify-center border-b border-sis-border bg-white shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
@@ -35,15 +69,18 @@ export default function Header({ onRegistrarDesvio }: HeaderProps) {
 
         {/* Menu de Navegação */}
         <div className="flex items-center space-x-6 pl-32">
-          <button className="font-roboto text-sm font-semibold text-sis-blue">
-            Home
-          </button>
-          <button className="font-roboto text-sm text-sis-dark-text hover:text-sis-blue">
-            Processos
-          </button>
-          <button className="font-roboto text-sm text-sis-dark-text hover:text-sis-blue">
-            Funcionários
-          </button>
+          {getMenuItems().map((item, index) => (
+            <button
+              key={index}
+              className={`font-roboto text-sm ${
+                item.active
+                  ? "font-semibold text-sis-blue"
+                  : "text-sis-dark-text hover:text-sis-blue"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
         {/* Área da Direita */}
@@ -65,7 +102,7 @@ export default function Header({ onRegistrarDesvio }: HeaderProps) {
               type="text"
               value={buscaTexto}
               onChange={(e) => setBuscaTexto(e.target.value)}
-              placeholder="Buscar processos ou funcionários..."
+              placeholder={getPlaceholder()}
               className="ml-3 flex-1 font-roboto text-sm text-sis-dark-text placeholder:text-opacity-40 placeholder:text-sis-dark-text focus:outline-none"
             />
           </div>

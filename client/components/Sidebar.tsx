@@ -95,7 +95,7 @@ export default function Sidebar({ onSair }: SidebarProps) {
           {menuItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => { setActiveItem(item.id); if (item.id === "dashboard") navigate("/gestor"); if (item.id === "registrar-desvio") navigate("/gestor/registrar"); }}
+              onClick={() => { setActiveItem(item.id); if (item.id === "dashboard") navigate("/gestor"); if (item.id === "registrar-desvio") navigate("/gestor/registrar"); if (item.id === "processos") navigate("/gestor/processos"); if (item.id === "funcionarios") navigate("/gestor/funcionarios"); }}
               className={`flex w-full items-center space-x-3 rounded-md px-3 py-2.5 text-left font-roboto text-sm font-medium transition-colors ${
                 activeItem === item.id
                   ? "bg-gray-100 text-sis-dark-text"

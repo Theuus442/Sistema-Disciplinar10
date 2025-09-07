@@ -12,6 +12,10 @@ import GestorDashboard from "./pages/gestor/GestorDashboard";
 import AdministradorDashboard from "./pages/administrador/AdministradorDashboard";
 import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
 import GestorRegistrarDesvio from "./pages/gestor/GestorRegistrarDesvio";
+import ProcessosPage from "./pages/gestor/Processos";
+import ProcessoAcompanhamento from "./pages/gestor/ProcessoAcompanhamento";
+import FuncionarioPage from "./pages/gestor/Funcionario";
+import FuncionariosListaPage from "./pages/gestor/Funcionarios";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +31,10 @@ const App = () => (
           <Route path="/administrador" element={<AdministradorDashboard />} />
           <Route path="/juridico" element={<JuridicoDashboard />} />
           <Route path="/gestor/registrar" element={<GestorRegistrarDesvio />} />
+          <Route path="/gestor/processos" element={<ProcessosPage />} />
+          <Route path="/gestor/processos/:id" element={<ProcessoAcompanhamento />} />
+          <Route path="/gestor/funcionarios" element={<FuncionariosListaPage />} />
+          <Route path="/gestor/funcionarios/:id" element={<FuncionarioPage />} />
           {/* ADICIONE TODAS AS ROTAS PERSONALIZADAS ACIMA DA ROTA CATCH-ALL "*" */}
           <Route path="*" element={<NaoEncontrado />} />
         </Routes>
