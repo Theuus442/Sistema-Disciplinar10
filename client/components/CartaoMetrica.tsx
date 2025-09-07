@@ -16,7 +16,7 @@ export default function CartaoMetrica({
   corValor = "text-sis-blue"
 }: CartaoMetricaProps) {
   return (
-    <div className="h-[298px] w-[363px] rounded-[10px] bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
+    <div className="min-h-[298px] w-full max-w-[363px] rounded-[10px] bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
       {/* Header com título e ícone */}
       <div className="mb-8 flex items-center justify-between">
         <h3 className="font-roboto text-lg font-bold text-sis-dark-text">
@@ -29,7 +29,7 @@ export default function CartaoMetrica({
 
       {/* Valor principal */}
       <div className="mb-4">
-        <span className={`font-open-sans text-[48px] font-extrabold leading-[60px] ${corValor}`}>
+        <span className={`font-open-sans text-3xl font-extrabold leading-tight sm:text-4xl md:text-[48px] md:leading-[60px] ${corValor}`}>
           {valor}
         </span>
       </div>
