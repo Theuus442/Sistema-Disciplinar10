@@ -64,7 +64,7 @@ export async function fetchEmployeeById(matriculaOrId: string) {
 
 export async function fetchProcesses() {
   const { data: processes } = await supabase.from("processes").select("*");
-  const { data: employees } = await supabase.from<FuncionarioAPI>("employees").select("*");
+  const { data: employees } = await supabase.from("employees").select("*");
   const empMap = new Map<string, string>();
   (employees || []).forEach((e) => empMap.set(e.id, e.nome_completo ?? e.matricula ?? ""));
 
@@ -80,7 +80,7 @@ export async function fetchProcesses() {
 }
 
 export async function fetchProcessById(id: string) {
-  const { data: processes } = await supabase.from<ProcessoAPI>("processes").select("*").eq("id", id);
+  const { data: processes } = await supabase.from("processes").select("*").eq("id", id);
   if (!processes || processes.length === 0) return undefined;
   const p = processes[0];
   const { data: employee } = await supabase.from("employees").select("*").eq("id", p.employee_id).limit(1).single();
