@@ -160,15 +160,15 @@ export default function RevisaoProcessoJuridico() {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Resultado da Análise</Label>
-                            <p className="font-medium text-sis-dark-text">{processoJuridico?.legalDecisionResult || "—"}</p>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.status || "—"}</p>
                           </div>
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Medida Recomendada/Aplicada</Label>
-                            <p className="font-medium text-sis-dark-text">{processoJuridico?.legalDecisionMeasure ?? "—"}</p>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.resolucao || "—"}</p>
                           </div>
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Data da Decisão</Label>
-                            <p className="font-medium text-sis-dark-text">{processoJuridico?.decisionDate || "—"}</p>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.dataAbertura || "—"}</p>
                           </div>
                         </div>
                         <div className="flex gap-3 pt-2">
