@@ -10,6 +10,25 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  function handleRedirectByRole(role?: string) {
+    const r = role?.toLowerCase?.();
+    toast({ title: "Login bem-sucedido" });
+    switch (r) {
+      case "administrador":
+        navigate("/administrador");
+        break;
+      case "gestor":
+        navigate("/gestor");
+        break;
+      case "juridico":
+        navigate("/juridico");
+        break;
+      default:
+        navigate("/");
+        break;
+    }
+  }
+
   const enviarLogin = async (e: FormEvent) => {
     e.preventDefault();
     try {
@@ -129,7 +148,7 @@ export default function Login() {
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   className="w-full rounded-md border border-sis-border bg-white px-3 py-2 font-roboto text-sm text-sis-secondary-text placeholder:text-sis-secondary-text focus:border-sis-blue focus:outline-none focus:ring-1 focus:ring-sis-blue xl:h-[37px] xl:px-3 xl:py-2"
-                  placeholder="•••••••"
+                  placeholder="••••��••"
                 />
               </div>
 
