@@ -90,7 +90,6 @@ export const createUserAndProfile: RequestHandler = async (req, res) => {
     const { error: profileErr } = await admin.from("profiles").insert({
       id: user.id,
       nome,
-      email,
       perfil,
       ativo,
     } as any);
