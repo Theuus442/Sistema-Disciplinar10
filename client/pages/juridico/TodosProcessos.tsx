@@ -127,9 +127,15 @@ export default function TodosProcessos() {
                             <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Button size="sm" onClick={() => navegar(`/juridico/processos/${c.id}`)}>
-                              Analisar Processo
-                            </Button>
+                            {c.status === "Finalizado" ? (
+                              <Button size="sm" variant="outline" onClick={() => navegar(`/juridico/processos/${c.id}`)}>
+                                Ver Detalhes
+                              </Button>
+                            ) : (
+                              <Button size="sm" onClick={() => navegar(`/juridico/processos/${c.id}`)}>
+                                Analisar Processo
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
