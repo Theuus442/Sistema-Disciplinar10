@@ -87,7 +87,9 @@ export default function Relatorios() {
       d.legalDecisionMeasure ?? "",
       d.decisionDate ?? "",
     ]);
-    const csv = [cabecalho, ...linhas].map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const csv = [cabecalho, ...linhas]
+      .map((r) => r.map((c) => `"${String(c).replace(/\"/g, '""')}"`).join(","))
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
