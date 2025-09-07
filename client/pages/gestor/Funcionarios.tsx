@@ -37,7 +37,7 @@ export default function FuncionariosListaPage() {
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    if (!q) return funcionariosMock;
+    if (!q) return employees;
     return funcionariosMock.filter((f) =>
       [f.nomeCompleto, f.id, f.cargo, f.setor, f.gestorDireto]
         .join(" ")
