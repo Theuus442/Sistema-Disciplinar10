@@ -17,6 +17,7 @@ import {
   funcionariosMock,
   type Funcionario,
   type Classificacao,
+  type StatusProcesso,
 } from "@/data/funcionarios";
 
 const getClassificacaoClasses = (c: Classificacao) => {
@@ -29,6 +30,19 @@ const getClassificacaoClasses = (c: Classificacao) => {
       return "bg-red-100 border-red-200 text-red-800";
     case "Gravíssima":
       return "bg-red-200 border-red-300 text-red-900";
+  }
+};
+
+const getStatusClasses = (s: StatusProcesso) => {
+  switch (s) {
+    case "Em Análise":
+      return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
+    case "Sindicância":
+      return "bg-status-blue-bg border-status-blue-border text-status-blue-text";
+    case "Aguardando Assinatura":
+      return "bg-status-purple-bg border-status-purple-border text-status-purple-text";
+    case "Finalizado":
+      return "bg-status-green-bg border-status-green-border text-status-green-text";
   }
 };
 
@@ -112,7 +126,11 @@ export default function FuncionarioPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="truncate">{r.medidaAplicada}</TableCell>
-                          <TableCell>{r.status}</TableCell>
+                          <TableCell>
+                            <Badge className={`border ${getStatusClasses(r.status)}`}>
+                              {r.status}
+                            </Badge>
+                          </TableCell>
                         </TableRow>
                       ))}
                       {funcionario.historico.length === 0 && (
