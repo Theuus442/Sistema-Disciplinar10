@@ -90,42 +90,26 @@ export default function RevisaoProcessoJuridico() {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Funcionário</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.employeeName}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.funcionario}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-sis-secondary-text">Data da Ocorrência</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.occurrenceDate}</p>
+                        <Label className="text-xs text-sis-secondary-text">Data de Abertura</Label>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.dataAbertura}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Tipo de Desvio</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.deviationType}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.tipoDesvio}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Classificação</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.classification}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.classificacao}</p>
                       </div>
                       <div>
-                        <Label className="text-xs text-sis-secondary-text">Data de Encaminhamento</Label>
-                        <p className="font-medium text-sis-dark-text">{processoJuridico.referralDate}</p>
+                        <Label className="text-xs text-sis-secondary-text">Data de Abertura</Label>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico?.dataAbertura}</p>
                       </div>
                     </div>
-                    <div>
-                      <Label className="text-xs text-sis-secondary-text">Descrição Detalhada (Gestor)</Label>
-                      <p className="text-sm text-sis-dark-text">{processoJuridico.managerDescription}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-sis-secondary-text">Documentos Anexados (Gestor)</Label>
-                      <ul className="list-disc pl-5 text-sm">
-                        {processoJuridico.managerAttachments.map((a) => (
-                          <li key={a.name}>
-                            <a href={a.url} className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
-                              {a.name}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
+                                      </CardContent>
                 </Card>
 
                 {/* 2. Análise Jurídica / Sindicância */}
