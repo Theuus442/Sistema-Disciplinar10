@@ -12,6 +12,8 @@ import GestorDashboard from "./pages/gestor/GestorDashboard";
 import AdministradorDashboard from "./pages/administrador/AdministradorDashboard";
 import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
 import GestorRegistrarDesvio from "./pages/gestor/GestorRegistrarDesvio";
+import ProcessosPage from "./pages/gestor/Processos";
+import ProcessoAcompanhamento from "./pages/gestor/ProcessoAcompanhamento";
 
 const queryClient = new QueryClient();
 
