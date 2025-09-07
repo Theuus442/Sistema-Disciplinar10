@@ -19,6 +19,7 @@ import {
   type Classificacao,
   type StatusProcesso,
 } from "@/data/funcionarios";
+import { fetchEmployeeById } from "@/lib/api";
 
 const getClassificacaoClasses = (c: Classificacao) => {
   switch (c) {
