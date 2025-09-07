@@ -12,11 +12,23 @@ export const listProfiles: RequestHandler = async (_req, res) => {
   try {
     const admin = getAdminClient();
     if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
-    const { data, error } = await admin
-      .from("profiles")
-      .select("id, nome, email, perfil, ativo");
+
+    // Select all columns to avoid projection errors if some optional columns don't exist
+    const { data, error } = await admin.from("profiles").select("*");
     if (error) return res.status(400).json({ error: error.message });
-    return res.json(data || []);
+
+    const rows = Array.isArray(data) ? data : [];
+    const normalized = rows.map((p: any) => ({
+      id: p.id,
+      nome: p.nome ?? "",
+      email: p.email ?? ((p.nome ? String(p.nome).toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com"),
+      perfil: p.perfil ?? "funcionario",
+      ativo: p.ativo ?? true,
+      criadoEm: p.created_at ?? new Date().toISOString(),
+      ultimoAcesso: p.ultimoAcesso ?? null,
+    }));
+
+    return res.json(normalized);
   } catch (e: any) {
     return res.status(500).json({ error: e?.message || String(e) });
   }
