@@ -145,7 +145,7 @@ export default function ProcessosPage() {
             <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4">
               <div className="md:col-span-2">
                 <Input
-                  placeholder="Buscar por funcion��rio ou ID do processo"
+                  placeholder="Buscar por funcionário ou ID do processo"
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                 />
