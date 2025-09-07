@@ -21,7 +21,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
     const normalized = rows.map((p: any) => ({
       id: p.id,
       nome: p.nome ?? "",
-      email: p.email ?? ((p.nome ? String(p.nome).toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com"),
+      email: p.email ?? "",
       perfil: p.perfil ?? "funcionario",
       ativo: p.ativo ?? true,
       criadoEm: p.created_at ?? new Date().toISOString(),
