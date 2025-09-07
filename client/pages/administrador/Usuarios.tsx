@@ -41,7 +41,7 @@ export default function UsuariosAdminPage() {
       rows.map((p) => ({
         id: p.id,
         nome: p.nome ?? "",
-        email: p.email ?? ((p.nome ? p.nome.toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com"),
+        email: p.email ?? "",
         perfil: (p.perfil ?? "funcionario") as PerfilUsuario,
         ativo: p.ativo ?? true,
         criadoEm: new Date().toISOString(),
@@ -227,7 +227,7 @@ export default function UsuariosAdminPage() {
                   {filtrados.map((u) => (
                     <TableRow key={u.id}>
                       <TableCell className="font-medium truncate max-w-[200px]">{u.nome}</TableCell>
-                      <TableCell className="truncate max-w-[250px]">{u.email}</TableCell>
+                      <TableCell className="whitespace-normal break-words">{u.email}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="capitalize">{u.perfil}</Badge>
                       </TableCell>
