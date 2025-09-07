@@ -8,6 +8,21 @@ function getAdminClient() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
+export const listProfiles: RequestHandler = async (_req, res) => {
+  try {
+    const admin = getAdminClient();
+    if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
+    const { data, error } = await admin
+      .from("profiles")
+      .select("id, nome, email, perfil, ativo, created_at")
+      .order("created_at", { ascending: false });
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json(data || []);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
 export const createUserAndProfile: RequestHandler = async (req, res) => {
   try {
     const { nome, email, password, perfil, ativo } = req.body as {
