@@ -19,5 +19,9 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
 
+  // Admin endpoints
+  const { createUserAndProfile } = await import("./routes/admin");
+  app.post("/api/admin/users", createUserAndProfile as any);
+
   return app;
 }
