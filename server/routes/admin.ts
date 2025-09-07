@@ -14,8 +14,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
     if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
     const { data, error } = await admin
       .from("profiles")
-      .select("id, nome, email, perfil, ativo, created_at")
-      .order("created_at", { ascending: false });
+      .select("id, nome, email, perfil, ativo, created_at");
     if (error) return res.status(400).json({ error: error.message });
     return res.json(data || []);
   } catch (e: any) {
