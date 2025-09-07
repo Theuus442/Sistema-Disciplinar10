@@ -10,10 +10,20 @@ export default function ProcessoAcompanhamento() {
   const params = useParams<{ id: string }>();
   const id = params.id as string;
 
-  const processo = useMemo(
-    () => processosMock.find((p) => p.id === id),
-    [id],
-  );
+  const [processo, setProcesso] = useState<any | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!id) return;
+    fetchProcessById(id)
+      .then((p) => {
+        if (mounted) setProcesso(p as any);
+      })
+      .catch(() => setProcesso(null));
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
 
   const handleSair = () => {
     window.location.href = "/";
