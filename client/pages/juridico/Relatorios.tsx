@@ -22,7 +22,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { FileText, Clock, CheckCircle2, PieChart as PieChartIcon, BarChart3 } from "lucide-react";
+import { FileText, Clock, CheckCircle2, PieChart as PieChartIcon, BarChart3, Calendar, Search, Download } from "lucide-react";
 
 function getLegalStatusClasses(s: LegalReviewStatus) {
   switch (s) {
@@ -144,25 +144,66 @@ export default function Relatorios() {
         <Header onRegistrarDesvio={() => navegar("/gestor/registrar")} userType="juridico" />
         <div className="flex-1 overflow-auto p-6">
           <div className="mx-auto max-w-7xl space-y-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-3">
               <div>
-                <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Relatórios (Jurídico)</h1>
-                <p className="font-roboto text-sis-secondary-text">Gere visões e exporte dados para auditoria e acompanhamento.</p>
+                <h1 className="mb-1 font-open-sans text-3xl font-bold text-sis-dark-text">Relatórios (Jurídico)</h1>
+                <p className="font-roboto text-sm text-sis-secondary-text">Gere visões e exporte dados para auditoria e acompanhamento.</p>
               </div>
-              <div className="flex w-full max-w-2xl flex-wrap items-end gap-3">
-                <Input className="min-w-[220px]" placeholder="Buscar por ID, funcionário, desvio..." value={busca} onChange={(e) => setBusca(e.target.value)} />
-                <Select value={statusFiltro} onValueChange={(v) => setStatusFiltro(v as any)}>
-                  <SelectTrigger className="w-56"><SelectValue placeholder="Status" /></SelectTrigger>
-                  <SelectContent>
-                    {statusOpcoes.map((s) => (
-                      <SelectItem key={s} value={s}>{s === "todos" ? "Todos os Status" : s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
-                <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
-                <Button onClick={exportarCSV} className="bg-sis-blue text-white hover:bg-blue-700">Exportar CSV</Button>
-              </div>
+              <Card className="border-sis-border bg-white">
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-12 gap-4">
+                    {/* Busca */}
+                    <div className="col-span-12 md:col-span-5">
+                      <label className="mb-1 block text-xs text-sis-secondary-text">Buscar</label>
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sis-secondary-text" />
+                        <Input
+                          className="pl-9"
+                          placeholder="Buscar por ID, funcionário, desvio..."
+                          value={busca}
+                          onChange={(e) => setBusca(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="col-span-12 md:col-span-3">
+                      <label className="mb-1 block text-xs text-sis-secondary-text">Status</label>
+                      <Select value={statusFiltro} onValueChange={(v) => setStatusFiltro(v as any)}>
+                        <SelectTrigger className="w-full"><SelectValue placeholder="Todos os Status" /></SelectTrigger>
+                        <SelectContent>
+                          {statusOpcoes.map((s) => (
+                            <SelectItem key={s} value={s}>{s === "todos" ? "Todos os Status" : s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Período */}
+                    <div className="col-span-12 md:col-span-3">
+                      <label className="mb-1 block text-xs text-sis-secondary-text">Período</label>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sis-secondary-text" />
+                          <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="pl-9" />
+                        </div>
+                        <span className="text-sm text-sis-secondary-text">—</span>
+                        <div className="relative flex-1">
+                          <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sis-secondary-text" />
+                          <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="pl-9" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Exportar */}
+                    <div className="col-span-12 md:col-span-1 flex items-end justify-end">
+                      <Button onClick={exportarCSV} className="w-full bg-sis-blue text-white hover:bg-blue-700 md:w-auto">
+                        <Download className="mr-2 h-4 w-4" /> Exportar CSV
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
