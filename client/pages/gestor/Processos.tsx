@@ -26,6 +26,7 @@ import {
   type Classificacao,
   type StatusAtual,
 } from "@/data/processos";
+import { fetchProcesses } from "@/lib/api";
 
 const getClassificacaoClasses = (c: Classificacao) => {
   switch (c) {
