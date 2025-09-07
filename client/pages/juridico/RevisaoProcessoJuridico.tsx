@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RichTextEditor from "@/components/RichTextEditor";
-import { legalCasesAwaitingMock } from "@/data/legal";
 import { useToast } from "@/hooks/use-toast";
+import { fetchProcessById } from "@/lib/api";
 
 export default function RevisaoProcessoJuridico() {
   const navegar = useNavigate();
@@ -132,7 +132,7 @@ export default function RevisaoProcessoJuridico() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label className="mb-2 block text-xs text-sis-secondary-text">Parecer Jurídico</Label>
+                      <Label className="mb-2 block text-xs text-sis-secondary-text">Parecer Jur��dico</Label>
                       {somenteVisualizacao ? (
                         <div
                           className="min-h-[120px] rounded-md border border-sis-border bg-gray-50 p-3 text-sm"
