@@ -20,6 +20,11 @@ export interface LegalCase {
   managerAttachments: LegalAttachment[];
   occurrenceDate: string; // yyyy-mm-dd
   status: LegalReviewStatus;
+  // Campos para processos finalizados (visualização)
+  legalDecisionResult?: "Arquivar Processo" | "Aplicar Medida Disciplinar" | "Recomendar Justa Causa Direta";
+  legalDecisionMeasure?: string | null;
+  legalOpinionSaved?: string; // HTML do parecer final
+  decisionDate?: string; // yyyy-mm-dd
 }
 
 export const legalCasesAwaitingMock: LegalCase[] = [
@@ -101,6 +106,11 @@ export const legalCasesAwaitingMock: LegalCase[] = [
     managerDescription: "Envio de conteúdo não relacionado ao trabalho.",
     managerAttachments: [{ name: "amostras-email.eml", url: "#" }],
     status: "Finalizado",
+    legalDecisionResult: "Aplicar Medida Disciplinar",
+    legalDecisionMeasure: "Advertência Escrita",
+    legalOpinionSaved:
+      "<p>Concluímos que houve violação da política de uso de e-mail corporativo. Recomenda-se aplicação de medida disciplinar proporcional, considerando a ausência de reincidência.</p>",
+    decisionDate: "2025-02-20",
   },
   {
     id: "PROC-1022",
@@ -134,6 +144,11 @@ export const legalCasesAwaitingMock: LegalCase[] = [
     managerDescription: "Falha no uso de EPI. Fotos anexas.",
     managerAttachments: [{ name: "fotos-epi.zip", url: "#" }],
     status: "Finalizado",
+    legalDecisionResult: "Arquivar Processo",
+    legalDecisionMeasure: null,
+    legalOpinionSaved:
+      "<p>Após análise, não foram constatados danos ou reincidência. Caso orientado com treinamento adicional e arquivado.</p>",
+    decisionDate: "2025-02-22",
   },
   {
     id: "PROC-1033",
