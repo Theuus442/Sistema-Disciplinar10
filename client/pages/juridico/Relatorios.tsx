@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { legalCasesAwaitingMock, type LegalReviewStatus } from "@/data/legal";
+import { fetchProcesses } from "@/lib/api";
 import {
   PieChart,
   Pie,
@@ -24,7 +24,9 @@ import {
 } from "recharts";
 import { FileText, Clock, CheckCircle2, PieChart as PieChartIcon, BarChart3, Calendar, Search, Download } from "lucide-react";
 
-function getLegalStatusClasses(s: LegalReviewStatus) {
+type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
+type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
+function getStatusClasses(s: StatusAtual) {
   switch (s) {
     case "Aguardando Parecer Jurídico":
       return "bg-status-yellow-bg border-status-yellow-border text-status-yellow-text";
@@ -35,10 +37,10 @@ function getLegalStatusClasses(s: LegalReviewStatus) {
   }
 }
 
-const statusOpcoes: ("todos" | LegalReviewStatus)[] = [
+const statusOpcoes: ("todos" | StatusAtual)[] = [
   "todos",
-  "Aguardando Parecer Jurídico",
-  "Em Revisão",
+  "Em Análise",
+  "Sindicância",
   "Finalizado",
 ];
 
