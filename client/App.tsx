@@ -11,7 +11,7 @@ import NaoEncontrado from "./pages/erros/NaoEncontrado";
 import GestorDashboard from "./pages/gestor/GestorDashboard";
 import AdministradorDashboard from "./pages/administrador/AdministradorDashboard";
 import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
-import LegalCaseReview from "./pages/juridico/LegalCaseReview";
+import RevisaoProcessoJuridico from "./pages/juridico/RevisaoProcessoJuridico";
 import GestorRegistrarDesvio from "./pages/gestor/GestorRegistrarDesvio";
 import ProcessosPage from "./pages/gestor/Processos";
 import ProcessoAcompanhamento from "./pages/gestor/ProcessoAcompanhamento";
@@ -31,7 +31,7 @@ const App = () => (
           <Route path="/gestor" element={<GestorDashboard />} />
           <Route path="/administrador" element={<AdministradorDashboard />} />
           <Route path="/juridico" element={<JuridicoDashboard />} />
-          <Route path="/juridico/processos/:id" element={<LegalCaseReview />} />
+          <Route path="/juridico/processos/:id" element={<RevisaoProcessoJuridico />} />
           <Route path="/gestor/registrar" element={<GestorRegistrarDesvio />} />
           <Route path="/gestor/processos" element={<ProcessosPage />} />
           <Route path="/gestor/processos/:id" element={<ProcessoAcompanhamento />} />

@@ -11,64 +11,63 @@ import RichTextEditor from "@/components/RichTextEditor";
 import { legalCasesAwaitingMock } from "@/data/legal";
 import { useToast } from "@/hooks/use-toast";
 
-export default function LegalCaseReview() {
-  const navigate = useNavigate();
-  const params = useParams<{ id: string }>();
+export default function RevisaoProcessoJuridico() {
+  const navegar = useNavigate();
+  const parametros = useParams<{ id: string }>();
   const { toast } = useToast();
 
-  const caseId = params.id as string;
-  const legalCase = useMemo(() => legalCasesAwaitingMock.find((c) => c.id === caseId), [caseId]);
+  const idProcesso = parametros.id as string;
+  const processoJuridico = useMemo(() => legalCasesAwaitingMock.find((c) => c.id === idProcesso), [idProcesso]);
 
-  const [legalOpinion, setLegalOpinion] = useState<string>("");
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [decision, setDecision] = useState<string>("");
-  const [recommendedMeasure, setRecommendedMeasure] = useState<string>("");
+  const [parecerJuridico, setParecerJuridico] = useState<string>("");
+  const [arquivosEnviados, setArquivosEnviados] = useState<File[]>([]);
+  const [decisao, setDecisao] = useState<string>("");
+  const [medidaRecomendada, setMedidaRecomendada] = useState<string>("");
 
-  const handleFilesChange = (files: FileList | null) => {
+  const aoAlterarArquivos = (files: FileList | null) => {
     if (!files) return;
-    setUploadedFiles(Array.from(files));
+    setArquivosEnviados(Array.from(files));
   };
 
-  const handleSubmit = () => {
-    if (!decision) {
+  const aoFinalizar = () => {
+    if (!decisao) {
       toast({ title: "Selecione o Resultado da Análise", description: "Campo obrigatório." });
       return;
     }
-    if (decision === "Aplicar Medida Disciplinar" && !recommendedMeasure) {
+    if (decisao === "Aplicar Medida Disciplinar" && !medidaRecomendada) {
       toast({ title: "Selecione a Medida Recomendada", description: "Campo obrigatório quando aplicar medida disciplinar." });
       return;
     }
 
-    // Simulate save
     // eslint-disable-next-line no-console
     console.log({
-      id: caseId,
-      legalOpinion,
-      uploadedFiles: uploadedFiles.map((f) => f.name),
-      decision,
-      recommendedMeasure: decision === "Aplicar Medida Disciplinar" ? recommendedMeasure : undefined,
+      id: idProcesso,
+      parecerJuridico,
+      arquivosEnviados: arquivosEnviados.map((f) => f.name),
+      decisao,
+      medidaRecomendada: decisao === "Aplicar Medida Disciplinar" ? medidaRecomendada : undefined,
     });
 
     toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
-    navigate("/juridico");
+    navegar("/juridico");
   };
 
-  const handleLogout = () => {
+  const aoSair = () => {
     window.location.href = "/";
   };
 
   return (
     <div className="flex h-screen bg-sis-bg-light">
-      <SidebarJuridico onSair={handleLogout} />
+      <SidebarJuridico onSair={aoSair} />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={() => navigate("/gestor/registrar")} userType="juridico" />
+        <Header onRegistrarDesvio={() => navegar("/gestor/registrar")} userType="juridico" />
         <div className="flex-1 overflow-auto p-6">
           <div className="mx-auto max-w-5xl space-y-6">
-            {!legalCase ? (
+            {!processoJuridico ? (
               <Card className="border-sis-border bg-white">
                 <CardContent className="p-6 space-y-4">
                   <h1 className="font-open-sans text-2xl font-bold text-sis-dark-text">Processo não encontrado</h1>
-                  <Button variant="outline" onClick={() => navigate(-1)}>Voltar</Button>
+                  <Button variant="outline" onClick={() => navegar(-1)}>Voltar</Button>
                 </CardContent>
               </Card>
             ) : (
@@ -78,7 +77,7 @@ export default function LegalCaseReview() {
                   <p className="font-roboto text-sis-secondary-text">Registre a sindicância, parecer e decisão final.</p>
                 </div>
 
-                {/* 1. Manager Information (read-only) */}
+                {/* 1. Informações do Gestor */}
                 <Card className="border-sis-border bg-white">
                   <CardHeader>
                     <CardTitle>Informações do Gestor</CardTitle>
@@ -87,33 +86,33 @@ export default function LegalCaseReview() {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Funcionário</Label>
-                        <p className="font-medium text-sis-dark-text">{legalCase.employeeName}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico.employeeName}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Data da Ocorrência</Label>
-                        <p className="font-medium text-sis-dark-text">{legalCase.occurrenceDate}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico.occurrenceDate}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Tipo de Desvio</Label>
-                        <p className="font-medium text-sis-dark-text">{legalCase.deviationType}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico.deviationType}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Classificação</Label>
-                        <p className="font-medium text-sis-dark-text">{legalCase.classification}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico.classification}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-sis-secondary-text">Data de Encaminhamento</Label>
-                        <p className="font-medium text-sis-dark-text">{legalCase.referralDate}</p>
+                        <p className="font-medium text-sis-dark-text">{processoJuridico.referralDate}</p>
                       </div>
                     </div>
                     <div>
                       <Label className="text-xs text-sis-secondary-text">Descrição Detalhada (Gestor)</Label>
-                      <p className="text-sm text-sis-dark-text">{legalCase.managerDescription}</p>
+                      <p className="text-sm text-sis-dark-text">{processoJuridico.managerDescription}</p>
                     </div>
                     <div>
                       <Label className="text-xs text-sis-secondary-text">Documentos Anexados (Gestor)</Label>
                       <ul className="list-disc pl-5 text-sm">
-                        {legalCase.managerAttachments.map((a) => (
+                        {processoJuridico.managerAttachments.map((a) => (
                           <li key={a.name}>
                             <a href={a.url} className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
                               {a.name}
@@ -125,7 +124,7 @@ export default function LegalCaseReview() {
                   </CardContent>
                 </Card>
 
-                {/* 2. Legal Analysis */}
+                {/* 2. Análise Jurídica / Sindicância */}
                 <Card className="border-sis-border bg-white">
                   <CardHeader>
                     <CardTitle>Análise Jurídica / Sindicância</CardTitle>
@@ -134,17 +133,17 @@ export default function LegalCaseReview() {
                     <div>
                       <Label className="mb-2 block text-xs text-sis-secondary-text">Parecer Jurídico</Label>
                       <RichTextEditor
-                        value={legalOpinion}
-                        onChange={setLegalOpinion}
+                        value={parecerJuridico}
+                        onChange={setParecerJuridico}
                         placeholder="Escreva aqui o parecer jurídico..."
                       />
                     </div>
                     <div>
                       <Label className="mb-2 block text-xs text-sis-secondary-text">Anexar Documentos da Sindicância</Label>
-                      <Input type="file" multiple onChange={(e) => handleFilesChange(e.target.files)} />
-                      {uploadedFiles.length > 0 && (
+                      <Input type="file" multiple onChange={(e) => aoAlterarArquivos(e.target.files)} />
+                      {arquivosEnviados.length > 0 && (
                         <ul className="mt-2 list-disc pl-5 text-sm">
-                          {uploadedFiles.map((f) => (
+                          {arquivosEnviados.map((f) => (
                             <li key={f.name}>{f.name}</li>
                           ))}
                         </ul>
@@ -153,7 +152,7 @@ export default function LegalCaseReview() {
                   </CardContent>
                 </Card>
 
-                {/* 3. Decision */}
+                {/* 3. Decisão */}
                 <Card className="border-sis-border bg-white">
                   <CardHeader>
                     <CardTitle>Decisão</CardTitle>
@@ -162,7 +161,7 @@ export default function LegalCaseReview() {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
                         <Label className="mb-2 block text-xs text-sis-secondary-text">Resultado da Análise</Label>
-                        <Select onValueChange={setDecision} value={decision}>
+                        <Select onValueChange={setDecisao} value={decisao}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o resultado" />
                           </SelectTrigger>
@@ -173,10 +172,10 @@ export default function LegalCaseReview() {
                           </SelectContent>
                         </Select>
                       </div>
-                      {decision === "Aplicar Medida Disciplinar" && (
+                      {decisao === "Aplicar Medida Disciplinar" && (
                         <div>
                           <Label className="mb-2 block text-xs text-sis-secondary-text">Medida Recomendada</Label>
-                          <Select onValueChange={setRecommendedMeasure} value={recommendedMeasure}>
+                          <Select onValueChange={setMedidaRecomendada} value={medidaRecomendada}>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione a medida" />
                             </SelectTrigger>
@@ -192,8 +191,8 @@ export default function LegalCaseReview() {
                     </div>
 
                     <div className="flex gap-3 pt-2">
-                      <Button variant="outline" onClick={() => navigate(-1)}>Voltar</Button>
-                      <Button onClick={handleSubmit} className="bg-sis-blue hover:bg-blue-700 text-white">
+                      <Button variant="outline" onClick={() => navegar(-1)}>Voltar</Button>
+                      <Button onClick={aoFinalizar} className="bg-sis-blue hover:bg-blue-700 text-white">
                         Finalizar Análise e Salvar Decisão
                       </Button>
                     </div>

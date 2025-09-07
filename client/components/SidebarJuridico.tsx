@@ -117,6 +117,7 @@ export default function SidebarJuridico({ onSair }: SidebarJuridicoProps) {
               onClick={() => { 
                 setActiveItem(item.id); 
                 if (item.id === "dashboard") navigate("/juridico");
+                if (item.id === "processos-analise") navigate("/juridico");
               }}
               className={`flex w-full items-center space-x-3 rounded-md px-3 py-2.5 text-left font-roboto text-sm font-medium transition-colors ${
                 activeItem === item.id
