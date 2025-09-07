@@ -31,15 +31,20 @@ export default function UsuariosAdminPage() {
 
   const carregarUsuarios = async () => {
     const res = await fetch("/api/admin/users");
-    const rows = (await res.json()) as any[];
+    if (!res.ok) {
+      setUsuarios([]);
+      return;
+    }
+    const body = await res.json();
+    const rows: any[] = Array.isArray(body) ? body : [];
     setUsuarios(
-      (rows || []).map((p) => ({
+      rows.map((p) => ({
         id: p.id,
         nome: p.nome ?? "",
         email: p.email ?? ((p.nome ? p.nome.toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com"),
         perfil: (p.perfil ?? "funcionario") as PerfilUsuario,
         ativo: p.ativo ?? true,
-        criadoEm: p.created_at ?? new Date().toISOString(),
+        criadoEm: new Date().toISOString(),
         ultimoAcesso: null,
       }))
     );
