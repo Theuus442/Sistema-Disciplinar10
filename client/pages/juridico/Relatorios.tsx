@@ -41,6 +41,7 @@ const statusOpcoes: ("todos" | StatusAtual)[] = [
   "todos",
   "Em Análise",
   "Sindicância",
+  "Aguardando Assinatura",
   "Finalizado",
 ];
 
