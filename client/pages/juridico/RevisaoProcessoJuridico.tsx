@@ -133,19 +133,6 @@ export default function RevisaoProcessoJuridico() {
                         />
                       )}
                     </div>
-                    {!somenteVisualizacao && (
-                      <div>
-                        <Label className="mb-2 block text-xs text-sis-secondary-text">Anexar Documentos da Sindicância</Label>
-                        <Input type="file" multiple onChange={(e) => aoAlterarArquivos(e.target.files)} />
-                        {arquivosEnviados.length > 0 && (
-                          <ul className="mt-2 list-disc pl-5 text-sm">
-                            {arquivosEnviados.map((f) => (
-                              <li key={f.name}>{f.name}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
 
