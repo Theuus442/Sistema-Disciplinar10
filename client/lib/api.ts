@@ -102,7 +102,7 @@ export async function fetchUsers() {
   return (profiles || []).map((p) => ({
     id: p.id,
     nome: p.nome ?? "",
-    email: (p.nome ? p.nome.toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com",
+    email: p.email ?? ((p.nome ? p.nome.toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com"),
     perfil: p.perfil ?? "funcionario",
     ativo: p.ativo ?? true,
     criadoEm: p.created_at ?? new Date().toISOString(),
