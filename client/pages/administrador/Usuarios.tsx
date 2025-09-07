@@ -65,8 +65,24 @@ export default function UsuariosAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome: novo.nome, email: novo.email, password: novo.password, perfil: novo.perfil, ativo: novo.ativo }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Erro ao criar usuário");
+
+      let payload: any = null;
+      let fallbackText: string | null = null;
+      try {
+        payload = await res.clone().json();
+      } catch {}
+      if (!payload) {
+        try {
+          fallbackText = await res.text();
+        } catch {}
+      }
+
+      if (!res.ok) {
+        const msg = (payload && (payload.error || payload.message)) || fallbackText || `${res.status} ${res.statusText}`;
+        throw new Error(msg);
+      }
+
+      const data = payload ?? {};
       setUsuarios((prev) => [data as any, ...prev]);
       setAbrirNovo(false);
       setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
@@ -109,7 +125,7 @@ export default function UsuariosAdminPage() {
           <div className="mx-auto max-w-7xl space-y-6">
             <div>
               <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Gerenciamento de Usuários</h1>
-              <p className="font-roboto text-sm text-sis-secondary-text">Administre perfis, status de acesso e cadastre novos usuários.</p>
+              <p className="font-roboto text-sm text-sis-secondary-text">Administre perfis, status de acesso e cadastre novos usu��rios.</p>
             </div>
 
             <Card className="border-sis-border bg-white">
