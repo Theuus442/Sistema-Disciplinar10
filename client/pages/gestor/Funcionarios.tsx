@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { funcionariosMock } from "@/data/funcionarios";
+import { fetchEmployees } from "@/lib/api";
 
 export default function FuncionariosListaPage() {
   const navigate = useNavigate();
