@@ -67,6 +67,10 @@ export default function Login() {
             return;
           }
 
+          // No profile found for authenticated user
+          toast({ title: "Erro no login", description: "Perfil não encontrado. Contate o administrador." });
+          return;
+
           // If not found by id, try searching by name/email fragment
           try {
             const nameFragment = attemptedEmail?.split("@")[0] ?? "";
