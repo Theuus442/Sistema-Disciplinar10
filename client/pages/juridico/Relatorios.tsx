@@ -38,7 +38,7 @@ function getLegalStatusClasses(s: LegalReviewStatus) {
 const statusOpcoes: ("todos" | LegalReviewStatus)[] = [
   "todos",
   "Aguardando Parecer Jurídico",
-  "Em Revis��o",
+  "Em Revisão",
   "Finalizado",
 ];
 
@@ -133,6 +133,44 @@ export default function Relatorios() {
     URL.revokeObjectURL(url);
   };
 
+  const exportarExcel = () => {
+    const cabecalho = [
+      "ID",
+      "Funcionário",
+      "Tipo de Desvio",
+      "Classificação",
+      "Data de Encaminhamento",
+      "Status",
+      "Decisão",
+      "Medida",
+      "Data Decisão",
+    ];
+    const escape = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const linhas = dados.map((d) => [
+      d.id,
+      d.employeeName,
+      d.deviationType,
+      d.classification,
+      d.referralDate,
+      d.status,
+      d.legalDecisionResult ?? "",
+      d.legalDecisionMeasure ?? "",
+      d.decisionDate ?? "",
+    ]);
+    const thead = `<tr>${cabecalho.map((h) => `<th style="border:1px solid #DEE1E6;padding:6px;background:#F8FAFC;text-align:left">${escape(h)}</th>`).join("")}</tr>`;
+    const tbody = linhas
+      .map((row) => `<tr>${row.map((c) => `<td style=\"border:1px solid #DEE1E6;padding:6px\">${escape(c)}</td>`).join("")}</tr>`)
+      .join("");
+    const html = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /></head><body><table>${thead}${tbody}</table></body></html>`;
+    const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorios-processos.xls";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const aoSair = () => {
     window.location.href = "/";
   };
@@ -196,9 +234,12 @@ export default function Relatorios() {
                     </div>
 
                     {/* Exportar */}
-                    <div className="col-span-12 md:col-span-1 flex items-end justify-end">
+                    <div className="col-span-12 md:col-span-3 flex items-end justify-end gap-2">
                       <Button onClick={exportarCSV} className="w-full bg-sis-blue text-white hover:bg-blue-700 md:w-auto">
                         <Download className="mr-2 h-4 w-4" /> Exportar CSV
+                      </Button>
+                      <Button onClick={exportarExcel} variant="outline" className="w-full md:w-auto">
+                        <FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar Excel
                       </Button>
                     </div>
                   </div>
