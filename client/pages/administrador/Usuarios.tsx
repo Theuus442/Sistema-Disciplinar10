@@ -176,7 +176,7 @@ export default function UsuariosAdminPage() {
                   <DialogTrigger asChild>
                     <Button className="bg-sis-blue text-white hover:bg-blue-700">+ Novo Usuário</Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[480px]">
+                  <DialogContent className="sm:max-w-[640px] max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Novo Usuário</DialogTitle>
                     </DialogHeader>
@@ -293,7 +293,7 @@ export default function UsuariosAdminPage() {
 
             {/* Modal de Edição */}
             <Dialog open={abrirEditar} onOpenChange={setAbrirEditar}>
-              <DialogContent className="sm:max-w-[480px]">
+              <DialogContent className="sm:max-w-[540px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Editar Usuário</DialogTitle>
                 </DialogHeader>
