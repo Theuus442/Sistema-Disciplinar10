@@ -18,6 +18,7 @@ export default function RevisaoProcessoJuridico() {
 
   const idProcesso = parametros.id as string;
   const processoJuridico = useMemo(() => legalCasesAwaitingMock.find((c) => c.id === idProcesso), [idProcesso]);
+  const somenteVisualizacao = processoJuridico?.status === "Finalizado";
 
   const [parecerJuridico, setParecerJuridico] = useState<string>("");
   const [arquivosEnviados, setArquivosEnviados] = useState<File[]>([]);
@@ -132,23 +133,32 @@ export default function RevisaoProcessoJuridico() {
                   <CardContent className="space-y-4">
                     <div>
                       <Label className="mb-2 block text-xs text-sis-secondary-text">Parecer Jurídico</Label>
-                      <RichTextEditor
-                        value={parecerJuridico}
-                        onChange={setParecerJuridico}
-                        placeholder="Escreva aqui o parecer jurídico..."
-                      />
-                    </div>
-                    <div>
-                      <Label className="mb-2 block text-xs text-sis-secondary-text">Anexar Documentos da Sindicância</Label>
-                      <Input type="file" multiple onChange={(e) => aoAlterarArquivos(e.target.files)} />
-                      {arquivosEnviados.length > 0 && (
-                        <ul className="mt-2 list-disc pl-5 text-sm">
-                          {arquivosEnviados.map((f) => (
-                            <li key={f.name}>{f.name}</li>
-                          ))}
-                        </ul>
+                      {somenteVisualizacao ? (
+                        <div
+                          className="min-h-[120px] rounded-md border border-sis-border bg-gray-50 p-3 text-sm"
+                          dangerouslySetInnerHTML={{ __html: processoJuridico?.legalOpinionSaved || "<em>Sem parecer registrado.</em>" }}
+                        />
+                      ) : (
+                        <RichTextEditor
+                          value={parecerJuridico}
+                          onChange={setParecerJuridico}
+                          placeholder="Escreva aqui o parecer jurídico..."
+                        />
                       )}
                     </div>
+                    {!somenteVisualizacao && (
+                      <div>
+                        <Label className="mb-2 block text-xs text-sis-secondary-text">Anexar Documentos da Sindicância</Label>
+                        <Input type="file" multiple onChange={(e) => aoAlterarArquivos(e.target.files)} />
+                        {arquivosEnviados.length > 0 && (
+                          <ul className="mt-2 list-disc pl-5 text-sm">
+                            {arquivosEnviados.map((f) => (
+                              <li key={f.name}>{f.name}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -158,44 +168,68 @@ export default function RevisaoProcessoJuridico() {
                     <CardTitle>Decisão</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <Label className="mb-2 block text-xs text-sis-secondary-text">Resultado da Análise</Label>
-                        <Select onValueChange={setDecisao} value={decisao}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o resultado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Arquivar Processo">Arquivar Processo</SelectItem>
-                            <SelectItem value="Aplicar Medida Disciplinar">Aplicar Medida Disciplinar (Advertência ou Suspensão)</SelectItem>
-                            <SelectItem value="Recomendar Justa Causa Direta">Recomendar Justa Causa Direta</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {decisao === "Aplicar Medida Disciplinar" && (
-                        <div>
-                          <Label className="mb-2 block text-xs text-sis-secondary-text">Medida Recomendada</Label>
-                          <Select onValueChange={setMedidaRecomendada} value={medidaRecomendada}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione a medida" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Advertência Escrita">Advertência Escrita</SelectItem>
-                              <SelectItem value="Suspensão de 1 dia">Suspensão de 1 dia</SelectItem>
-                              <SelectItem value="Suspensão de 3 dias">Suspensão de 3 dias</SelectItem>
-                              <SelectItem value="Suspensão de 5 dias">Suspensão de 5 dias</SelectItem>
-                            </SelectContent>
-                          </Select>
+                    {somenteVisualizacao ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div>
+                            <Label className="text-xs text-sis-secondary-text">Resultado da Análise</Label>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.legalDecisionResult || "—"}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-sis-secondary-text">Medida Recomendada/Aplicada</Label>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.legalDecisionMeasure ?? "—"}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-sis-secondary-text">Data da Decisão</Label>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.decisionDate || "—"}</p>
+                          </div>
                         </div>
-                      )}
-                    </div>
+                        <div className="flex gap-3 pt-2">
+                          <Button variant="outline" onClick={() => navegar(-1)}>Voltar</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div>
+                            <Label className="mb-2 block text-xs text-sis-secondary-text">Resultado da Análise</Label>
+                            <Select onValueChange={setDecisao} value={decisao}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o resultado" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Arquivar Processo">Arquivar Processo</SelectItem>
+                                <SelectItem value="Aplicar Medida Disciplinar">Aplicar Medida Disciplinar (Advertência ou Suspensão)</SelectItem>
+                                <SelectItem value="Recomendar Justa Causa Direta">Recomendar Justa Causa Direta</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {decisao === "Aplicar Medida Disciplinar" && (
+                            <div>
+                              <Label className="mb-2 block text-xs text-sis-secondary-text">Medida Recomendada</Label>
+                              <Select onValueChange={setMedidaRecomendada} value={medidaRecomendada}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione a medida" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Advertência Escrita">Advertência Escrita</SelectItem>
+                                  <SelectItem value="Suspensão de 1 dia">Suspensão de 1 dia</SelectItem>
+                                  <SelectItem value="Suspensão de 3 dias">Suspensão de 3 dias</SelectItem>
+                                  <SelectItem value="Suspensão de 5 dias">Suspensão de 5 dias</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
 
-                    <div className="flex gap-3 pt-2">
-                      <Button variant="outline" onClick={() => navegar(-1)}>Voltar</Button>
-                      <Button onClick={aoFinalizar} className="bg-sis-blue hover:bg-blue-700 text-white">
-                        Finalizar Análise e Salvar Decisão
-                      </Button>
-                    </div>
+                        <div className="flex gap-3 pt-2">
+                          <Button variant="outline" onClick={() => navegar(-1)}>Voltar</Button>
+                          <Button onClick={aoFinalizar} className="bg-sis-blue hover:bg-blue-700 text-white">
+                            Finalizar Análise e Salvar Decisão
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </>
