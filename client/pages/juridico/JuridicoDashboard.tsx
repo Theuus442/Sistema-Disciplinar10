@@ -61,23 +61,25 @@ function AwaitingLegalTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {legalCasesAwaitingMock.map((c) => (
-            <TableRow key={c.id}>
-              <TableCell className="font-medium">{c.id}</TableCell>
-              <TableCell className="truncate">{c.employeeName}</TableCell>
-              <TableCell className="truncate">{c.deviationType}</TableCell>
-              <TableCell>{c.classification}</TableCell>
-              <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
-              <TableCell>
-                <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
-              </TableCell>
-              <TableCell>
-                <Button size="sm" onClick={() => navigate(`/juridico/processos/${c.id}`)}>
-                  Analisar Processo
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {legalCasesAwaitingMock
+            .filter((c) => c.status === "Aguardando Parecer Jurídico")
+            .map((c) => (
+              <TableRow key={c.id}>
+                <TableCell className="font-medium">{c.id}</TableCell>
+                <TableCell className="truncate">{c.employeeName}</TableCell>
+                <TableCell className="truncate">{c.deviationType}</TableCell>
+                <TableCell>{c.classification}</TableCell>
+                <TableCell className="text-sis-secondary-text">{c.referralDate}</TableCell>
+                <TableCell>
+                  <Badge className={`border ${getLegalStatusClasses(c.status)}`}>{c.status}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Button size="sm" onClick={() => navigate(`/juridico/processos/${c.id}`)}>
+                    Analisar Processo
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
         </TableBody>
       </Table>
     </div>
