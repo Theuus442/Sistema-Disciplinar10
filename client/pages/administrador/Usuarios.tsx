@@ -110,9 +110,7 @@ export default function UsuariosAdminPage() {
       }
 
       const data = payload ?? {};
-      // Sincroniza lista consultando o banco para refletir políticas e mapeamentos
-      const lista = await fetchUsers();
-      setUsuarios(lista as any);
+      await carregarUsuarios();
       setAbrirNovo(false);
       setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
       toast({ title: "Usuário criado", description: `${data.nome} (${data.perfil})` });
