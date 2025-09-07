@@ -23,6 +23,10 @@ export default function UsuariosAdminPage() {
   const [abrirNovo, setAbrirNovo] = useState(false);
   const [novo, setNovo] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
 
+  const [abrirEditar, setAbrirEditar] = useState(false);
+  const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
+  const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
+
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     if (!q) return usuarios;
@@ -44,6 +48,19 @@ export default function UsuariosAdminPage() {
   };
 
   const handleSair = () => navigate("/");
+
+  const abrirModalEdicao = (u: Usuario) => {
+    setAlvoEdicao(u);
+    setEdicao({ nome: u.nome, email: u.email, perfil: u.perfil, ativo: u.ativo });
+    setAbrirEditar(true);
+  };
+
+  const salvarEdicao = () => {
+    if (!alvoEdicao) return;
+    setUsuarios((prev) => prev.map((u) => (u.id === alvoEdicao.id ? { ...u, nome: edicao.nome, email: edicao.email, perfil: edicao.perfil, ativo: edicao.ativo } : u)));
+    setAbrirEditar(false);
+    toast({ title: "Usuário atualizado", description: edicao.nome });
+  };
 
   return (
     <div className="flex h-screen bg-sis-bg-light">
@@ -132,7 +149,7 @@ export default function UsuariosAdminPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => toast({ title: "Editar usuário", description: u.nome })}>Editar</Button>
+                        <Button variant="outline" size="sm" onClick={() => abrirModalEdicao(u)}>Editar</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -144,6 +161,45 @@ export default function UsuariosAdminPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Modal de Edição */}
+            <Dialog open={abrirEditar} onOpenChange={setAbrirEditar}>
+              <DialogContent className="sm:max-w-[480px]">
+                <DialogHeader>
+                  <DialogTitle>Editar Usuário</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div>
+                    <Label>Nome</Label>
+                    <Input value={edicao.nome} onChange={(e) => setEdicao({ ...edicao, nome: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>E-mail</Label>
+                    <Input type="email" value={edicao.email} onChange={(e) => setEdicao({ ...edicao, email: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Perfil</Label>
+                    <Select value={edicao.perfil} onValueChange={(v: PerfilUsuario) => setEdicao({ ...edicao, perfil: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="administrador">Administrador</SelectItem>
+                        <SelectItem value="gestor">Gestor</SelectItem>
+                        <SelectItem value="juridico">Jurídico</SelectItem>
+                        <SelectItem value="funcionario">Funcionário</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label>Ativo</Label>
+                    <Switch checked={edicao.ativo} onCheckedChange={(v) => setEdicao({ ...edicao, ativo: v })} />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setAbrirEditar(false)}>Cancelar</Button>
+                  <Button onClick={salvarEdicao} className="bg-sis-blue text-white hover:bg-blue-700">Salvar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
