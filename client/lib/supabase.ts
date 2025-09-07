@@ -34,8 +34,13 @@ function createNotConfiguredClient() {
     async maybeSingle() {
       return { data: null, error: { message } };
     },
-    async then() {
-      return { data: null, error: { message } } as any;
+    then(onFulfilled?: (value: any) => any, onRejected?: (reason: any) => any) {
+      const value = { data: null, error: { message } } as const;
+      try {
+        return Promise.resolve(onFulfilled ? onFulfilled(value) : (value as any));
+      } catch (err) {
+        return onRejected ? Promise.resolve(onRejected(err)) : Promise.reject(err);
+      }
     },
   });
 
