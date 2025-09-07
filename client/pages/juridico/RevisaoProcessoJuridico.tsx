@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RichTextEditor from "@/components/RichTextEditor";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState, useMemo } from "react";
 import { fetchProcessById } from "@/lib/api";
 
 export default function RevisaoProcessoJuridico() {
