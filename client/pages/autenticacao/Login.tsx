@@ -27,6 +27,8 @@ export default function Login() {
         // fetch profile to determine role
         try {
           const userId = data.user?.id;
+
+          // Primary: fetch profile from public.profiles
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("perfil")
@@ -35,29 +37,34 @@ export default function Login() {
             .single();
 
           if (profileError) {
+            console.error("profiles fetch error:", profileError);
+
+            // Fallback: try to get user info from auth
+            const { data: authUserData, error: getUserErr } = await supabase.auth.getUser();
+            if (getUserErr) {
+              console.error("auth.getUser error:", getUserErr);
+              toast({ title: "Login bem-sucedido", description: "Não foi possível obter o perfil do usuário." });
+              navigate("/");
+              return;
+            }
+
+            const authUser = authUserData?.user;
+            const roleFromMetadata = (authUser as any)?.user_metadata?.perfil || (authUser as any)?.user_metadata?.role;
+
+            if (roleFromMetadata) {
+              handleRedirectByRole(roleFromMetadata as string);
+              return;
+            }
+
             toast({ title: "Login bem-sucedido", description: "Não foi possível obter o perfil do usuário." });
             navigate("/");
             return;
           }
 
           const role = profile?.perfil as string | undefined;
-          toast({ title: "Login bem-sucedido" });
-
-          switch (role) {
-            case "administrador":
-              navigate("/administrador");
-              break;
-            case "gestor":
-              navigate("/gestor");
-              break;
-            case "juridico":
-              navigate("/juridico");
-              break;
-            default:
-              navigate("/");
-              break;
-          }
+          handleRedirectByRole(role);
         } catch (err) {
+          console.error("error determining profile:", err);
           toast({ title: "Login bem-sucedido" });
           navigate("/");
         }
