@@ -119,6 +119,10 @@ export default function UsuariosAdminPage() {
                         <Input type="email" value={novo.email} onChange={(e) => setNovo({ ...novo, email: e.target.value })} />
                       </div>
                       <div>
+                        <Label>Senha (mín. 6)</Label>
+                        <Input type="password" value={novo.password} onChange={(e) => setNovo({ ...novo, password: e.target.value })} />
+                      </div>
+                      <div>
                         <Label>Perfil</Label>
                         <Select value={novo.perfil} onValueChange={(v: PerfilUsuario) => setNovo({ ...novo, perfil: v })}>
                           <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
