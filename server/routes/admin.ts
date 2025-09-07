@@ -130,3 +130,44 @@ export const createUserAndProfile: RequestHandler = async (req, res) => {
     return res.status(500).json({ error: e?.message || String(e) });
   }
 };
+
+export const listRecentLogins: RequestHandler = async (_req, res) => {
+  try {
+    const admin = getAdminClient();
+    if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
+
+    const users: any[] = [];
+    let page = 1;
+    const perPage = 1000;
+    while (true) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage } as any);
+      if (error) return res.status(400).json({ error: error.message });
+      const batch = data?.users ?? [];
+      users.push(...batch);
+      if (batch.length < perPage) break;
+      page += 1;
+    }
+
+    const ids = users.map((u: any) => u.id).filter(Boolean);
+    let namesById = new Map<string, string>();
+    if (ids.length) {
+      const { data: profs } = await admin.from("profiles").select("id,nome").in("id", ids as any);
+      for (const p of profs || []) namesById.set((p as any).id, (p as any).nome ?? "");
+    }
+
+    const list = users
+      .map((u: any) => ({
+        id: u.id,
+        email: u.email ?? "",
+        nome: namesById.get(u.id) ?? "",
+        lastSignInAt: u.last_sign_in_at ?? u.updated_at ?? u.created_at ?? null,
+      }))
+      .filter((u) => !!u.lastSignInAt)
+      .sort((a, b) => new Date(b.lastSignInAt as any).getTime() - new Date(a.lastSignInAt as any).getTime())
+      .slice(0, 10);
+
+    return res.json(list);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
