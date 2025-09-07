@@ -19,6 +19,21 @@ import { fetchEmployees } from "@/lib/api";
 export default function FuncionariosListaPage() {
   const navigate = useNavigate();
   const [busca, setBusca] = useState("");
+  const [employees, setEmployees] = useState<typeof funcionariosMock>(funcionariosMock);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchEmployees()
+      .then((data) => {
+        if (mounted && data) setEmployees(data as any);
+      })
+      .catch(() => {
+        // keep mocks on error
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
