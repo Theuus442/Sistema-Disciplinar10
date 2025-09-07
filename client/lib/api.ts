@@ -75,6 +75,7 @@ export async function fetchProcesses() {
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
     dataAbertura: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
+    resolucao: p.resolucao ?? "",
   }));
 }
 
