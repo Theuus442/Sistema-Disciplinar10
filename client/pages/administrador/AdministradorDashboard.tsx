@@ -18,12 +18,13 @@ export default function AdministradorDashboard() {
   const [totalUsuarios, setTotalUsuarios] = useState(0);
   useEffect(() => {
     let mounted = true;
-    import("@/lib/api").then(async (m) => {
+    (async () => {
       try {
-        const list = await m.fetchUsers();
-        if (mounted) setTotalUsuarios(list.length);
+        const res = await fetch("/api/admin/users");
+        const rows = (await res.json()) as any[];
+        if (mounted) setTotalUsuarios(rows.length);
       } catch {}
-    });
+    })();
     return () => { mounted = false; };
   }, []);
 
