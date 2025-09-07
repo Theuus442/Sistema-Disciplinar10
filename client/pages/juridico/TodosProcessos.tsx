@@ -37,21 +37,31 @@ export default function TodosProcessos() {
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<(typeof statusOpcoes)[number]>("todos");
 
-  // No momento usamos o dataset legalCasesAwaitingMock como fonte base
+  const [processos, setProcessos] = useState<{ id: string; funcionario: string; tipoDesvio: string; classificacao: Classificacao; dataAbertura: string; status: StatusAtual; }[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchProcesses().then((data) => {
+      if (mounted) setProcessos((data as any) || []);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const itens = useMemo(() => {
-    const base = legalCasesAwaitingMock;
-    const filtradoStatus =
-      statusFiltro === "todos" ? base : base.filter((c) => c.status === statusFiltro);
+    const base = processos;
+    const filtradoStatus = statusFiltro === "todos" ? base : base.filter((c) => c.status === statusFiltro);
     if (!busca.trim()) return filtradoStatus;
     const q = busca.toLowerCase();
     return filtradoStatus.filter(
       (c) =>
         c.id.toLowerCase().includes(q) ||
-        c.employeeName.toLowerCase().includes(q) ||
-        c.deviationType.toLowerCase().includes(q) ||
-        c.classification.toLowerCase().includes(q),
+        c.funcionario.toLowerCase().includes(q) ||
+        c.tipoDesvio.toLowerCase().includes(q) ||
+        (c.classificacao as string).toLowerCase().includes(q),
     );
-  }, [busca, statusFiltro]);
+  }, [busca, statusFiltro, processos]);
 
   const aoSair = () => {
     window.location.href = "/";
