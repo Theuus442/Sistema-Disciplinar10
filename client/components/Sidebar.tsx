@@ -88,7 +88,7 @@ export default function Sidebar({ onSair }: SidebarProps) {
   ];
 
   return (
-    <div className="flex h-full w-56 md:w-64 flex-col border-r border-sis-border bg-white">
+    <div className="flex h-screen w-56 md:w-64 flex-col border-r border-sis-border bg-white">
       <div className="flex flex-1 flex-col p-2">
         <div className="mb-2 flex items-center px-2 py-2">
           <svg className="h-6 w-6 flex-shrink-0" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
