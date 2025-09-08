@@ -63,10 +63,30 @@ export async function fetchEmployeeById(matriculaOrId: string) {
 }
 
 export async function fetchProcesses() {
-  const res = await fetch("/api/processes");
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  const items = await res.json();
-  return Array.isArray(items) ? items : [];
+  try {
+    const res = await fetch("/api/processes");
+    if (res.ok) {
+      const items = await res.json();
+      return Array.isArray(items) ? items : [];
+    }
+    throw new Error(`${res.status} ${res.statusText}`);
+  } catch {
+    // Fallback: fetch directly from Supabase (requires RLS to allow read)
+    const { data: processes } = await supabase.from("processes").select("*");
+    const { data: employees } = await supabase.from("employees").select("*");
+    const empMap = new Map<string, string>();
+    (employees || []).forEach((e) => empMap.set(e.id, e.nome_completo ?? e.matricula ?? ""));
+    return (processes || []).map((p) => ({
+      id: p.id,
+      funcionario: empMap.get(p.employee_id) ?? "",
+      tipoDesvio: p.tipo_desvio ?? "",
+      classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
+      dataAbertura: (() => { const d = p.created_at ?? p.data_ocorrencia ?? (p as any).createdAt ?? (p as any).dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
+      createdAt: (p.created_at ?? (p as any).data_ocorrencia ?? (p as any).createdAt ?? (p as any).dataOcorrencia) ?? null,
+      status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
+      resolucao: p.resolucao ?? "",
+    }));
+  }
 }
 
 export async function fetchProcessById(id: string) {
