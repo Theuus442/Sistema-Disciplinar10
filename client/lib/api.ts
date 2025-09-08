@@ -43,7 +43,7 @@ export async function fetchEmployees() {
         .filter((pr) => pr.employee_id === e.id)
         .map((pr) => ({
           id: pr.id,
-          dataOcorrencia: pr.created_at ? new Date(pr.created_at).toLocaleDateString() : "",
+          dataOcorrencia: (() => { const d = pr.created_at ?? pr.data_ocorrencia ?? pr.createdAt ?? pr.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
           tipoDesvio: pr.tipo_desvio ?? "",
           classificacao: pr.classificacao ? (pr.classificacao === "Media" ? "Média" : pr.classificacao) : ("Leve" as any),
           medidaAplicada: pr.resolucao ?? pr.descricao ?? "",
