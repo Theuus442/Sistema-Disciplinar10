@@ -117,7 +117,7 @@ export default function ProcessosPage() {
 
       return buscaOk && tipoOk && classOk && statusOk;
     });
-  }, [busca, filtroTipo, filtroClassificacao, filtroStatus]);
+  }, [processes, busca, filtroTipo, filtroClassificacao, filtroStatus]);
 
   const handleRegistrarDesvio = () => {
     navigate("/gestor/registrar");
