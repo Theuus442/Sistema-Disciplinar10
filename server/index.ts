@@ -27,5 +27,8 @@ export function createServer() {
   app.get("/api/admin/activities", listRecentActivities as any);
   app.post("/api/admin/users", createUserAndProfile as any);
 
+  // Processes listing (service role)
+  app.get("/api/processes", listProcesses as any);
+
   return app;
 }
