@@ -50,7 +50,6 @@ export default function GestorRegistrarDesvio() {
         classificacao: classificacao === "Média" ? "Media" : classificacao,
         descricao,
         status: "Em_Analise",
-        created_at: new Date(dataOcorrencia).toISOString(),
         criado_por_user_id: userId,
       };
 
