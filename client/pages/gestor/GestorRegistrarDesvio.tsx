@@ -39,6 +39,11 @@ export default function GestorRegistrarDesvio() {
       const auth = await supabase.auth.getUser();
       const userId = auth?.data?.user?.id;
 
+      if (!userId) {
+        toast.error("Você precisa estar autenticado para registrar um desvio.");
+        return;
+      }
+
       const payload: any = {
         employee_id: funcionarioId,
         tipo_desvio: tipoDesvio,
@@ -46,7 +51,7 @@ export default function GestorRegistrarDesvio() {
         descricao,
         status: "Em_Analise",
         created_at: new Date(dataOcorrencia).toISOString(),
-        criado_por_user_id: userId ?? null,
+        criado_por_user_id: userId,
       };
 
       const { error } = await supabase.from("processes").insert(payload);
