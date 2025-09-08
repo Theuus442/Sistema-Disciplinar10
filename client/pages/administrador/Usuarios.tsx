@@ -118,7 +118,7 @@ export default function UsuariosAdminPage() {
       }
 
       if (!res.ok) {
-        const msg = (payload && (payload.error || payload.message)) || fallbackText || `${res.status} ${res.statusText}`;
+        const msg = (payload ? errorMessage(payload) : null) || fallbackText || `${res.status} ${res.statusText}`;
         throw new Error(msg);
       }
 
