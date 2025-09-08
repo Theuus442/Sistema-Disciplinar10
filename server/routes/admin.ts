@@ -190,17 +190,19 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     }
 
     const procActivities = procs
-      .filter((p: any) => !!p?.created_at)
       .map((p: any) => {
+        const at = p?.created_at ?? p?.data_ocorrencia ?? p?.createdAt ?? p?.dataOcorrencia ?? null;
+        if (!at) return null;
         const emp = employeesById.get(p.employee_id);
         const nome = emp?.nome_completo ?? "Funcionário";
         const tipo = p.tipo_desvio ?? "Processo";
         return {
           id: `process:${p.id}`,
           descricao: `Abertura de processo (${tipo}) para ${nome}`,
-          at: p.created_at as string,
+          at: at as string,
         };
-      });
+      })
+      .filter(Boolean) as any[];
 
     // Users created -> activities
     const users: any[] = [];
