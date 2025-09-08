@@ -57,7 +57,8 @@ export default function RevisaoProcessoJuridico() {
       toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
       navegar("/juridico");
     } catch (e: any) {
-      toast({ title: "Erro ao salvar decisão", description: e?.message || String(e) });
+      const { errorMessage } = await import("@/lib/utils");
+      toast({ title: "Erro ao salvar decisão", description: errorMessage(e) });
     }
   };
 
