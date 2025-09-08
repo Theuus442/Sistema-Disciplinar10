@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { errorMessage } from "@/lib/utils";
 
 export default function Login() {
   const [usuario, setUsuario] = useState("");
@@ -118,7 +119,7 @@ export default function Login() {
         toast({ title: "Login", description: "Verifique suas credenciais." });
       }
     } catch (err: any) {
-      toast({ title: "Erro no login", description: err?.message ?? String(err) });
+      toast({ title: "Erro no login", description: errorMessage(err) });
     }
   };
 
