@@ -85,25 +85,6 @@ export default function SidebarJuridico({ onSair }: SidebarJuridicoProps) {
         </svg>
       ),
     },
-    {
-      id: "configuracoes",
-      nome: "Configurações",
-      icon: (
-        <svg
-          className="h-5 w-5 flex-shrink-0"
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M16.655 5C17.1134 5 17.485 5.37161 17.485 5.83C17.485 6.28839 17.1134 6.66 16.655 6.66L9.18498 6.66C8.72657 6.66 8.35498 6.28839 8.35498 5.83C8.35498 5.37161 8.72657 5 9.18498 5L16.655 5Z" fill="currentColor"/>
-          <path d="M11.655 13.34C12.1134 13.34 12.485 13.7116 12.485 14.17C12.485 14.6284 12.1134 15 11.655 15L4.18498 15C3.72659 15 3.35498 14.6284 3.35498 14.17C3.35498 13.7116 3.72659 13.34 4.18498 13.34L11.655 13.34Z" fill="currentColor"/>
-          <path d="M15.83 14.17C15.83 13.2532 15.0868 12.51 14.17 12.51C13.2532 12.51 12.51 13.2532 12.51 14.17C12.51 15.0868 13.2532 15.83 14.17 15.83C15.0868 15.83 15.83 15.0868 15.83 14.17ZM17.49 14.17C17.49 16.0036 16.0035 17.49 14.17 17.49C12.3364 17.49 10.85 16.0036 10.85 14.17C10.85 12.3365 12.3364 10.85 14.17 10.85C16.0035 10.85 17.49 12.3365 17.49 14.17Z" fill="currentColor"/>
-          <path d="M7.49001 5.83001C7.49001 4.91322 6.7468 4.17001 5.83001 4.17001C4.91322 4.17001 4.17001 4.91322 4.17001 5.83001C4.17001 6.7468 4.91322 7.49001 5.83001 7.49001C6.7468 7.49001 7.49001 6.7468 7.49001 5.83001ZM9.15001 5.83001C9.15001 7.6636 7.6636 9.15001 5.83001 9.15001C3.99642 9.15001 2.51001 7.6636 2.51001 5.83001C2.51001 3.99642 3.99642 2.51001 5.83001 2.51001C7.6636 2.51001 9.15001 3.99642 9.15001 5.83001Z" fill="currentColor"/>
-        </svg>
-      ),
-    },
   ];
 
   return (
@@ -128,7 +109,6 @@ export default function SidebarJuridico({ onSair }: SidebarJuridicoProps) {
                 if (item.id === "processos-analise") navigate("/juridico/processos/aguardando");
                 if (item.id === "todos-processos") navigate("/juridico/processos/todos");
                 if (item.id === "relatorios") navigate("/juridico/relatorios");
-                if (item.id === "configuracoes") navigate("/juridico/configuracoes");
               }}
               className={`flex w-full items-center space-x-3 rounded-md px-3 py-2.5 text-left font-roboto text-sm font-medium transition-colors ${
                 activeItem === item.id
