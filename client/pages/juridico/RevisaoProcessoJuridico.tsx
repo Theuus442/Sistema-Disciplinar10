@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import RichTextEditor from "@/components/RichTextEditor";
 import { useToast } from "@/hooks/use-toast";
 import { fetchProcessById } from "@/lib/api";
+import { errorMessage } from "@/lib/utils";
 
 export default function RevisaoProcessoJuridico() {
   const navegar = useNavigate();
@@ -57,7 +58,6 @@ export default function RevisaoProcessoJuridico() {
       toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
       navegar("/juridico");
     } catch (e: any) {
-      const { errorMessage } = await import("@/lib/utils");
       toast({ title: "Erro ao salvar decisão", description: errorMessage(e) });
     }
   };
