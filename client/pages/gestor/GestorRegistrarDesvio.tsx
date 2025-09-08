@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Sidebar from "@/components/Sidebar";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { errorMessage } from "@/lib/utils";
 
 export default function GestorRegistrarDesvio() {
   const [funcionarioId, setFuncionarioId] = useState("");
@@ -57,7 +58,7 @@ export default function GestorRegistrarDesvio() {
       setAnexos([]);
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || "Erro ao registrar desvio");
+      toast.error(errorMessage(err) || "Erro ao registrar desvio");
     }
   };
 
