@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
 function sanitizeEnv(v?: string) {
-  if (!v) return v as any;
-  return v.trim().replace(/^['"]|['"]$/g, "");
+  if (!v) return undefined as any;
+  const t = v.trim().replace(/^['"]|['"]$/g, "");
+  if (!t || t.toLowerCase() === "undefined" || t.toLowerCase() === "null") return undefined as any;
+  return t;
 }
 
 const rawUrl = import.meta.env.VITE_SUPABASE_URL as string;
