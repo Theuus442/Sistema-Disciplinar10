@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Header from "@/components/Header";
+
 import SidebarJuridico from "@/components/SidebarJuridico";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import RichTextEditor from "@/components/RichTextEditor";
 import { useToast } from "@/hooks/use-toast";
 import { fetchProcessById } from "@/lib/api";
+import { errorMessage } from "@/lib/utils";
 
 export default function RevisaoProcessoJuridico() {
   const navegar = useNavigate();
@@ -57,7 +58,7 @@ export default function RevisaoProcessoJuridico() {
       toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
       navegar("/juridico");
     } catch (e: any) {
-      toast({ title: "Erro ao salvar decisão", description: e?.message || String(e) });
+      toast({ title: "Erro ao salvar decisão", description: errorMessage(e) });
     }
   };
 
@@ -69,8 +70,7 @@ export default function RevisaoProcessoJuridico() {
     <div className="flex h-screen bg-sis-bg-light">
       <SidebarJuridico onSair={aoSair} />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={() => navegar("/gestor/registrar")} userType="juridico" />
-        <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-5xl space-y-6">
             {!processoJuridico ? (
               <Card className="border-sis-border bg-white">

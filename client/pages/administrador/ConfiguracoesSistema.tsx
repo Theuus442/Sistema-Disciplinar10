@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
+
 import SidebarAdministrador from "@/components/SidebarAdministrador";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -29,10 +29,9 @@ export default function ConfiguracoesSistemaAdminPage() {
 
   return (
     <div className="flex h-screen bg-sis-bg-light">
-      <div className="hidden lg:block"><SidebarAdministrador onSair={aoSair} /></div>
+      <SidebarAdministrador onSair={aoSair} />
       <div className="flex flex-1 flex-col">
-        <Header userType="administrador" placeholder="Buscar configurações..." />
-        <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto grid max-w-5xl gap-6">
             <div>
               <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Configurações do Sistema</h1>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
+
 import Sidebar from "@/components/Sidebar";
 import MetricCard from "@/components/MetricCard";
 import TabelaProcessos from "@/components/TabelaProcessos";
@@ -112,8 +112,7 @@ export default function GestorDashboard() {
     <div className="flex h-screen bg-sis-bg-light">
       <Sidebar onSair={handleSair} />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={handleRegistrarDesvio} userType="gestor" />
-        <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-7xl">
             <div className="mb-8">
               <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Dashboard do Gestor</h1>

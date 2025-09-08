@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { errorMessage } from "@/lib/utils";
 
 export default function Login() {
   const [usuario, setUsuario] = useState("");
@@ -67,6 +68,10 @@ export default function Login() {
             return;
           }
 
+          // No profile found for authenticated user
+          toast({ title: "Erro no login", description: "Perfil não encontrado. Contate o administrador." });
+          return;
+
           // If not found by id, try searching by name/email fragment
           try {
             const nameFragment = attemptedEmail?.split("@")[0] ?? "";
@@ -114,7 +119,7 @@ export default function Login() {
         toast({ title: "Login", description: "Verifique suas credenciais." });
       }
     } catch (err: any) {
-      toast({ title: "Erro no login", description: err?.message ?? String(err) });
+      toast({ title: "Erro no login", description: errorMessage(err) });
     }
   };
 

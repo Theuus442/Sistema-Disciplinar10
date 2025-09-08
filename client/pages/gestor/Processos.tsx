@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
+
 import Sidebar from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -117,7 +117,7 @@ export default function ProcessosPage() {
 
       return buscaOk && tipoOk && classOk && statusOk;
     });
-  }, [busca, filtroTipo, filtroClassificacao, filtroStatus]);
+  }, [processes, busca, filtroTipo, filtroClassificacao, filtroStatus]);
 
   const handleRegistrarDesvio = () => {
     navigate("/gestor/registrar");
@@ -131,8 +131,7 @@ export default function ProcessosPage() {
     <div className="flex h-screen bg-sis-bg-light">
       <Sidebar onSair={handleSair} />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={handleRegistrarDesvio} userType="gestor" />
-        <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-7xl">
             <div className="mb-6">
               <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">
@@ -146,7 +145,7 @@ export default function ProcessosPage() {
             <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4">
               <div className="md:col-span-2">
                 <Input
-                  placeholder="Buscar por funcion��rio ou ID do processo"
+                  placeholder="Buscar por funcionário ou ID do processo"
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                 />

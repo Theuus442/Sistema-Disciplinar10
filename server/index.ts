@@ -2,7 +2,8 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
-import { createUserAndProfile } from "./routes/admin";
+import { createUserAndProfile, listProfiles, listRecentLogins, listRecentActivities } from "./routes/admin";
+import { listProcesses } from "./routes/processes";
 
 export function createServer() {
   const app = express();
@@ -21,7 +22,13 @@ export function createServer() {
   app.get("/api/demo", handleDemo);
 
   // Admin endpoints
+  app.get("/api/admin/users", listProfiles as any);
+  app.get("/api/admin/logins", listRecentLogins as any);
+  app.get("/api/admin/activities", listRecentActivities as any);
   app.post("/api/admin/users", createUserAndProfile as any);
+
+  // Processes listing (service role)
+  app.get("/api/processes", listProcesses as any);
 
   return app;
 }

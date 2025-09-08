@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
+
 import SidebarAdministrador from "@/components/SidebarAdministrador";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { fetchUsers, updateProfile, type PerfilUsuario } from "@/lib/api";
+import { updateProfile, type PerfilUsuario } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import { errorMessage } from "@/lib/utils";
 
 export default function UsuariosAdminPage() {
   const navigate = useNavigate();
@@ -22,18 +24,49 @@ export default function UsuariosAdminPage() {
   const [busca, setBusca] = useState("");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [abrirNovo, setAbrirNovo] = useState(false);
-  const [novo, setNovo] = useState<{ nome: string; email: string; password: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
+  const [novo, setNovo] = useState<{ nome: string; email: string; password: string; perfil: PerfilUsuario; ativo: boolean; nomeCompleto?: string; matricula?: string; cargo?: string; setor?: string; gestorId?: string }>({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
 
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
   const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
 
+  const carregarUsuarios = async () => {
+    const res = await fetch("/api/admin/users");
+    if (!res.ok) {
+      setUsuarios([]);
+      return;
+    }
+    const body = await res.json();
+    const rows: any[] = Array.isArray(body) ? body : [];
+    setUsuarios(
+      rows.map((p) => ({
+        id: p.id,
+        nome: p.nome ?? "",
+        email: p.email ?? "",
+        perfil: (p.perfil ?? "funcionario") as PerfilUsuario,
+        ativo: p.ativo ?? true,
+        criadoEm: new Date().toISOString(),
+        ultimoAcesso: null,
+      }))
+    );
+  };
+
   useEffect(() => {
     let mounted = true;
-    fetchUsers()
-      .then((list) => { if (mounted) setUsuarios(list as any); })
-      .catch(() => {});
+    carregarUsuarios().catch(() => {});
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("profiles-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+        carregarUsuarios().catch(() => {});
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filtrados = useMemo(() => {
@@ -50,7 +83,7 @@ export default function UsuariosAdminPage() {
       toast({ title: ativo ? "Usuário ativado" : "Usuário desativado" });
     } catch (e: any) {
       setUsuarios(old);
-      toast({ title: "Erro ao atualizar status", description: e?.message || String(e) });
+      toast({ title: "Erro ao atualizar status", description: errorMessage(e) });
     }
   };
 
@@ -60,10 +93,17 @@ export default function UsuariosAdminPage() {
       return;
     }
     try {
+      const employee = novo.perfil === "funcionario" ? {
+        nomeCompleto: novo.nomeCompleto || novo.nome,
+        matricula: novo.matricula || null,
+        cargo: novo.cargo || null,
+        setor: novo.setor || null,
+        gestorId: novo.gestorId || null,
+      } : undefined;
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome: novo.nome, email: novo.email, password: novo.password, perfil: novo.perfil, ativo: novo.ativo }),
+        body: JSON.stringify({ nome: novo.nome, email: novo.email, password: novo.password, perfil: novo.perfil, ativo: novo.ativo, employee }),
       });
 
       let payload: any = null;
@@ -78,17 +118,17 @@ export default function UsuariosAdminPage() {
       }
 
       if (!res.ok) {
-        const msg = (payload && (payload.error || payload.message)) || fallbackText || `${res.status} ${res.statusText}`;
+        const msg = (payload ? errorMessage(payload) : null) || fallbackText || `${res.status} ${res.statusText}`;
         throw new Error(msg);
       }
 
       const data = payload ?? {};
-      setUsuarios((prev) => [data as any, ...prev]);
+      await carregarUsuarios();
       setAbrirNovo(false);
-      setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
+      setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true, nomeCompleto: "", matricula: "", cargo: "", setor: "", gestorId: "" });
       toast({ title: "Usuário criado", description: `${data.nome} (${data.perfil})` });
     } catch (e: any) {
-      toast({ title: "Erro ao criar usuário", description: e?.message || String(e) });
+      toast({ title: "Erro ao criar usuário", description: errorMessage(e) });
     }
   };
 
@@ -112,20 +152,19 @@ export default function UsuariosAdminPage() {
       toast({ title: "Usuário atualizado", description: edicao.nome });
     } catch (e: any) {
       setUsuarios(old);
-      toast({ title: "Erro ao salvar", description: e?.message || String(e) });
+      toast({ title: "Erro ao salvar", description: errorMessage(e) });
     }
   };
 
   return (
     <div className="flex h-screen bg-sis-bg-light">
-      <div className="hidden lg:block"><SidebarAdministrador onSair={handleSair} /></div>
+      <SidebarAdministrador onSair={handleSair} />
       <div className="flex flex-1 flex-col">
-        <Header userType="administrador" placeholder="Buscar usuários..." />
-        <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-7xl space-y-6">
             <div>
               <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Gerenciamento de Usuários</h1>
-              <p className="font-roboto text-sm text-sis-secondary-text">Administre perfis, status de acesso e cadastre novos usu��rios.</p>
+              <p className="font-roboto text-sm text-sis-secondary-text">Administre perfis, status de acesso e cadastre novos usuários.</p>
             </div>
 
             <Card className="border-sis-border bg-white">
@@ -138,7 +177,7 @@ export default function UsuariosAdminPage() {
                   <DialogTrigger asChild>
                     <Button className="bg-sis-blue text-white hover:bg-blue-700">+ Novo Usuário</Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[480px]">
+                  <DialogContent className="sm:max-w-[640px] max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Novo Usuário</DialogTitle>
                     </DialogHeader>
@@ -167,6 +206,39 @@ export default function UsuariosAdminPage() {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {novo.perfil === "funcionario" && (
+                        <div className="grid grid-cols-1 gap-3">
+                          <div>
+                            <Label>Nome Completo</Label>
+                            <Input value={novo.nomeCompleto ?? novo.nome} onChange={(e) => setNovo({ ...novo, nomeCompleto: e.target.value })} />
+                          </div>
+                          <div>
+                            <Label>Matrícula</Label>
+                            <Input value={novo.matricula ?? ""} onChange={(e) => setNovo({ ...novo, matricula: e.target.value })} />
+                          </div>
+                          <div>
+                            <Label>Cargo</Label>
+                            <Input value={novo.cargo ?? ""} onChange={(e) => setNovo({ ...novo, cargo: e.target.value })} />
+                          </div>
+                          <div>
+                            <Label>Setor/Departamento</Label>
+                            <Input value={novo.setor ?? ""} onChange={(e) => setNovo({ ...novo, setor: e.target.value })} />
+                          </div>
+                          <div>
+                            <Label>Gestor Direto</Label>
+                            <Select value={novo.gestorId ?? ""} onValueChange={(v: string) => setNovo({ ...novo, gestorId: v })}>
+                              <SelectTrigger><SelectValue placeholder="Selecione o gestor" /></SelectTrigger>
+                              <SelectContent>
+                                {usuarios.filter((u) => u.perfil === "gestor" || u.perfil === "administrador").map((g) => (
+                                  <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between">
                         <Label>Ativo</Label>
                         <Switch checked={novo.ativo} onCheckedChange={(v) => setNovo({ ...novo, ativo: v })} />
@@ -196,7 +268,7 @@ export default function UsuariosAdminPage() {
                   {filtrados.map((u) => (
                     <TableRow key={u.id}>
                       <TableCell className="font-medium truncate max-w-[200px]">{u.nome}</TableCell>
-                      <TableCell className="truncate max-w-[250px]">{u.email}</TableCell>
+                      <TableCell className="whitespace-normal break-words">{u.email}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="capitalize">{u.perfil}</Badge>
                       </TableCell>
@@ -222,7 +294,7 @@ export default function UsuariosAdminPage() {
 
             {/* Modal de Edição */}
             <Dialog open={abrirEditar} onOpenChange={setAbrirEditar}>
-              <DialogContent className="sm:max-w-[480px]">
+              <DialogContent className="sm:max-w-[540px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Editar Usuário</DialogTitle>
                 </DialogHeader>

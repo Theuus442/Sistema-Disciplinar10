@@ -43,7 +43,7 @@ export async function fetchEmployees() {
         .filter((pr) => pr.employee_id === e.id)
         .map((pr) => ({
           id: pr.id,
-          dataOcorrencia: pr.created_at ? new Date(pr.created_at).toLocaleDateString() : "",
+          dataOcorrencia: (() => { const d = pr.created_at ?? pr.data_ocorrencia ?? pr.createdAt ?? pr.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
           tipoDesvio: pr.tipo_desvio ?? "",
           classificacao: pr.classificacao ? (pr.classificacao === "Media" ? "Média" : pr.classificacao) : ("Leve" as any),
           medidaAplicada: pr.resolucao ?? pr.descricao ?? "",
@@ -63,21 +63,10 @@ export async function fetchEmployeeById(matriculaOrId: string) {
 }
 
 export async function fetchProcesses() {
-  const { data: processes } = await supabase.from("processes").select("*");
-  const { data: employees } = await supabase.from("employees").select("*");
-  const empMap = new Map<string, string>();
-  (employees || []).forEach((e) => empMap.set(e.id, e.nome_completo ?? e.matricula ?? ""));
-
-  return (processes || []).map((p) => ({
-    id: p.id,
-    funcionario: empMap.get(p.employee_id) ?? "",
-    tipoDesvio: p.tipo_desvio ?? "",
-    classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
-    dataAbertura: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
-    createdAt: p.created_at ?? null,
-    status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
-    resolucao: p.resolucao ?? "",
-  }));
+  const res = await fetch("/api/processes");
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  const items = await res.json();
+  return Array.isArray(items) ? items : [];
 }
 
 export async function fetchProcessById(id: string) {
@@ -90,8 +79,8 @@ export async function fetchProcessById(id: string) {
     funcionario: employee?.nome_completo ?? "",
     tipoDesvio: p.tipo_desvio ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
-    dataAbertura: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
-    createdAt: p.created_at ?? null,
+    dataAbertura: (() => { const d = p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
+    createdAt: (p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia) ?? null,
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
     resolucao: p.resolucao ?? "",
   };
@@ -102,7 +91,7 @@ export async function fetchUsers() {
   return (profiles || []).map((p) => ({
     id: p.id,
     nome: p.nome ?? "",
-    email: (p.nome ? p.nome.toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com",
+    email: p.email ?? ((p.nome ? p.nome.toLowerCase().replace(/\s+/g, ".") : "user") + "@empresa.com"),
     perfil: p.perfil ?? "funcionario",
     ativo: p.ativo ?? true,
     criadoEm: p.created_at ?? new Date().toISOString(),

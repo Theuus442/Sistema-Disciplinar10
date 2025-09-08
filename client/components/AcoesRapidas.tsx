@@ -1,4 +1,7 @@
+import { useNavigate } from "react-router-dom";
+
 export default function AcoesRapidas() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-[330px] w-full max-w-[363px] rounded-[10px] bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
       {/* Header */}
@@ -10,7 +13,11 @@ export default function AcoesRapidas() {
 
       {/* Botões de ação */}
       <div className="space-y-3">
-        <button className="flex w-full items-center space-x-3 rounded-md border border-sis-border bg-white px-4 py-2.5 text-left hover:bg-gray-50 active:bg-gray-100">
+        <button
+          type="button"
+          onClick={() => navigate("/administrador/usuarios")}
+          className="flex w-full items-center space-x-3 rounded-md border border-sis-border bg-white px-4 py-2.5 text-left hover:bg-gray-50 active:bg-gray-100"
+        >
           <svg
             className="h-5 w-5 text-sis-dark-text"
             width="20"
@@ -29,7 +36,11 @@ export default function AcoesRapidas() {
           </span>
         </button>
 
-        <button className="flex w-full items-center space-x-3 rounded-md border border-sis-border bg-white px-4 py-2.5 text-left hover:bg-gray-50 active:bg-gray-100">
+        <button
+          type="button"
+          onClick={() => navigate("/administrador/configuracoes")}
+          className="flex w-full items-center space-x-3 rounded-md border border-sis-border bg-white px-4 py-2.5 text-left hover:bg-gray-50 active:bg-gray-100"
+        >
           <svg
             className="h-5 w-5 text-sis-dark-text"
             width="20"

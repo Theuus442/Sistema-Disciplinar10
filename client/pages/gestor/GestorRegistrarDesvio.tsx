@@ -1,50 +1,75 @@
-import { useState, type FormEvent, type ChangeEvent } from "react";
-import Header from "@/components/Header";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Sidebar from "@/components/Sidebar";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { errorMessage } from "@/lib/utils";
 
 export default function GestorRegistrarDesvio() {
-  const [funcionario, setFuncionario] = useState("");
+  const [funcionarioId, setFuncionarioId] = useState("");
+  const [funcionarios, setFuncionarios] = useState<Array<{ id: string; nome: string }>>([]);
   const [dataOcorrencia, setDataOcorrencia] = useState("");
   const [tipoDesvio, setTipoDesvio] = useState("");
   const [classificacao, setClassificacao] = useState("");
   const [descricao, setDescricao] = useState("");
   const [anexos, setAnexos] = useState<File[]>([]);
 
-  const funcionariosSugestoes = [
-    "João Silva",
-    "Maria Oliveira",
-    "Pedro Souza",
-    "Ana Costa",
-    "Carlos Santos",
-  ];
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data, error } = await supabase.from("employees").select("id,nome_completo,matricula");
+      if (error) {
+        console.error(error);
+        return;
+      }
+      if (!mounted) return;
+      setFuncionarios((data || []).map((e: any) => ({ id: e.id, nome: e.nome_completo ?? e.matricula ?? e.id })));
+    })();
+    return () => { mounted = false; };
+  }, []);
 
-  const enviarFormulario = (e: FormEvent) => {
+  const enviarFormulario = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!funcionario || !dataOcorrencia || !tipoDesvio || !classificacao || !descricao) {
+    if (!funcionarioId || !dataOcorrencia || !tipoDesvio || !classificacao || !descricao) {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
 
-    const payload = {
-      funcionario,
-      dataOcorrencia,
-      tipoDesvio,
-      classificacao,
-      descricao,
-      anexos: anexos.map((f) => f.name),
-    };
+    try {
+      const auth = await supabase.auth.getUser();
+      const userId = auth?.data?.user?.id;
 
-    console.log("Registrar Desvio enviado:", payload);
-    toast.success("Desvio registrado com sucesso!");
+      if (!userId) {
+        toast.error("Você precisa estar autenticado para registrar um desvio.");
+        return;
+      }
 
-    setFuncionario("");
-    setDataOcorrencia("");
-    setTipoDesvio("");
-    setClassificacao("");
-    setDescricao("");
-    setAnexos([]);
+      const genId = () => (typeof crypto !== "undefined" && (crypto as any).randomUUID ? (crypto as any).randomUUID() : ([1e7] as any + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c: any) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
+      const payload: any = {
+        id: genId(),
+        employee_id: funcionarioId,
+        tipo_desvio: tipoDesvio,
+        classificacao: classificacao === "Média" ? "Media" : classificacao,
+        descricao,
+        status: "Em_Analise",
+        criado_por_user_id: userId,
+      };
+
+      const { error } = await supabase.from("processes").insert(payload);
+      if (error) throw error;
+
+      toast.success("Desvio registrado com sucesso!");
+
+      setFuncionarioId("");
+      setDataOcorrencia("");
+      setTipoDesvio("");
+      setClassificacao("");
+      setDescricao("");
+      setAnexos([]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(errorMessage(err) || "Erro ao registrar desvio");
+    }
   };
 
   const onChangeArquivos = (e: ChangeEvent<HTMLInputElement>) => {
@@ -56,8 +81,7 @@ export default function GestorRegistrarDesvio() {
     <div className="flex h-screen bg-sis-bg-light">
       <Sidebar />
       <div className="flex flex-1 flex-col">
-        <Header onRegistrarDesvio={() => {}} />
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="mx-auto max-w-5xl">
             <h1 className="mb-2 font-open-sans text-3xl font-bold text-sis-dark-text">Registrar Desvio</h1>
             <p className="mb-8 font-roboto text-sis-secondary-text">
@@ -71,18 +95,16 @@ export default function GestorRegistrarDesvio() {
                   <label className="mb-1 block font-roboto text-sm font-medium text-sis-dark-text">
                     Funcionário
                   </label>
-                  <input
-                    list="lista-funcionarios"
-                    value={funcionario}
-                    onChange={(e) => setFuncionario(e.target.value)}
-                    placeholder="Pesquisar colaborador..."
-                    className="w-full rounded-md border border-sis-border bg-white px-3 py-2 font-roboto text-sm text-sis-dark-text placeholder:text-sis-secondary-text focus:border-sis-blue focus:outline-none focus:ring-1 focus:ring-sis-blue"
-                  />
-                  <datalist id="lista-funcionarios">
-                    {funcionariosSugestoes.map((nome) => (
-                      <option key={nome} value={nome} />
+                  <select
+                    value={funcionarioId}
+                    onChange={(e) => setFuncionarioId(e.target.value)}
+                    className="w-full rounded-md border border-sis-border bg-white px-3 py-2 font-roboto text-sm text-sis-dark-text focus:border-sis-blue focus:outline-none focus:ring-1 focus:ring-sis-blue"
+                  >
+                    <option value="" disabled>Selecione...</option>
+                    {funcionarios.map((f) => (
+                      <option key={f.id} value={f.id}>{f.nome}</option>
                     ))}
-                  </datalist>
+                  </select>
                 </div>
 
                 {/* Data da Ocorrência */}
@@ -182,7 +204,7 @@ export default function GestorRegistrarDesvio() {
                 <button
                   type="button"
                   onClick={() => {
-                    setFuncionario("");
+                    setFuncionarioId("");
                     setDataOcorrencia("");
                     setTipoDesvio("");
                     setClassificacao("");
