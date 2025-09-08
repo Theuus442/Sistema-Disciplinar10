@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { updateProfile, type PerfilUsuario } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { errorMessage } from "@/lib/utils";
 
 export default function UsuariosAdminPage() {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export default function UsuariosAdminPage() {
       toast({ title: ativo ? "Usuário ativado" : "Usuário desativado" });
     } catch (e: any) {
       setUsuarios(old);
-      toast({ title: "Erro ao atualizar status", description: e?.message || String(e) });
+      toast({ title: "Erro ao atualizar status", description: errorMessage(e) });
     }
   };
 
@@ -127,7 +128,7 @@ export default function UsuariosAdminPage() {
       setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true, nomeCompleto: "", matricula: "", cargo: "", setor: "", gestorId: "" });
       toast({ title: "Usuário criado", description: `${data.nome} (${data.perfil})` });
     } catch (e: any) {
-      toast({ title: "Erro ao criar usuário", description: e?.message || String(e) });
+      toast({ title: "Erro ao criar usuário", description: errorMessage(e) });
     }
   };
 
@@ -151,7 +152,7 @@ export default function UsuariosAdminPage() {
       toast({ title: "Usuário atualizado", description: edicao.nome });
     } catch (e: any) {
       setUsuarios(old);
-      toast({ title: "Erro ao salvar", description: e?.message || String(e) });
+      toast({ title: "Erro ao salvar", description: errorMessage(e) });
     }
   };
 
