@@ -141,10 +141,9 @@ export const createUserAndProfile: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: "Campos obrigatórios: nome, email, password, perfil" });
     }
 
-    const admin = getAdminClient();
-    if (!admin) {
-      return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
-    }
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const admin = ctx.admin;
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
