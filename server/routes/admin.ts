@@ -14,6 +14,12 @@ function getAdminClient() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
+async function listUsersPageWithTimeout(admin: any, page: number, perPage: number, ms = 8000) {
+  const op = admin.auth.admin.listUsers({ page, perPage } as any);
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("listUsers timeout")), ms));
+  return Promise.race([op, timeout]) as Promise<any>;
+}
+
 function getAnonClientWithToken(token: string) {
   const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
   const anon = sanitizeEnv((process.env as any).SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY);
@@ -206,8 +212,13 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
     const perPage = 200;
     const maxPages = 5;
     while (page <= maxPages) {
-      const { data, error } = await admin.auth.admin.listUsers({ page, perPage } as any);
-      if (error) break;
+      let data: any | null = null;
+      try {
+        const resp = await listUsersPageWithTimeout(admin, page, perPage);
+        data = resp?.data ?? null;
+      } catch {
+        break;
+      }
       const batch = data?.users ?? [];
       users.push(...batch);
       if (batch.length < perPage) break;
@@ -282,8 +293,13 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     const perPage = 200;
     const maxPages = 5;
     while (page <= maxPages) {
-      const { data, error } = await admin.auth.admin.listUsers({ page, perPage } as any);
-      if (error) break;
+      let data: any | null = null;
+      try {
+        const resp = await listUsersPageWithTimeout(admin, page, perPage);
+        data = resp?.data ?? null;
+      } catch {
+        break;
+      }
       const batch = data?.users ?? [];
       users.push(...batch);
       if (batch.length < perPage) break;
