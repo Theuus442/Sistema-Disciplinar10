@@ -7,11 +7,23 @@ function sanitizeEnv(v?: string | null) {
   if (!t || t.toLowerCase() === "undefined" || t.toLowerCase() === "null") return undefined as any;
   return t;
 }
+function createFetchWithTimeout(defaultMs = 7000) {
+  return async (input: any, init?: any) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(new Error("fetch timeout")), init?.timeout ?? defaultMs);
+    try {
+      const res = await fetch(input, { ...init, signal: controller.signal });
+      return res as any;
+    } finally {
+      clearTimeout(id);
+    }
+  };
+}
 function getAdminClient() {
   const url = sanitizeEnv(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
   const serviceKey = sanitizeEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!url || !serviceKey) return null;
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
+  return createClient(url, serviceKey, { auth: { persistSession: false }, global: { fetch: createFetchWithTimeout(8000) } as any });
 }
 
 export const listProcesses: RequestHandler = async (_req, res) => {
@@ -19,7 +31,7 @@ export const listProcesses: RequestHandler = async (_req, res) => {
     const admin = getAdminClient();
     if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
 
-    const { data: processes, error: procErr } = await admin.from("processes").select("*");
+    const { data: processes, error: procErr } = await admin.from("processes").select("*").order("created_at", { ascending: false }).limit(200);
     if (procErr) return res.status(400).json({ error: procErr.message });
     const procs = Array.isArray(processes) ? processes : [];
 
