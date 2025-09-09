@@ -1,31 +1,34 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import serverless from "serverless-http";
+import express from "express";
+import cors from "cors";
 
-async function getCreateServer() {
-  // Prefer the built server bundle produced by vite build:server
-  try {
-    const m = await import("../dist/server/node-build.mjs");
-    const fn = (m as any).createServer || (m?.default?.createServer as any);
-    if (typeof fn === "function") return fn;
-  } catch {}
-  // Fallbacks for dev or alternate builds
-  try {
-    const m = await import("../server/index.js");
-    return (m as any).createServer as () => any;
-  } catch {}
-  const m = await import("../server/index.ts").catch(() => ({ default: {} as any }));
-  const fn = (m as any).createServer || (m as any).default?.createServer;
-  if (typeof fn !== "function") throw new Error("createServer not found in server bundle");
-  return fn as () => any;
-}
+import { handleDemo } from "../server/routes/demo";
+import { createUserAndProfile, listProfiles, listRecentLogins, listRecentActivities } from "../server/routes/admin";
+import { listProcesses } from "../server/routes/processes";
 
-const handlerPromise = (async () => {
-  const create = await getCreateServer();
-  const app = await create();
-  return serverless(app as any);
-})();
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-export default async function api(req: VercelRequest, res: VercelResponse) {
-  const handler = await handlerPromise;
+app.get("/api/ping", (_req, res) => {
+  const ping = process.env.PING_MESSAGE ?? "ping";
+  res.json({ message: ping });
+});
+
+app.get("/api/demo", handleDemo);
+
+// Admin endpoints (protected inside handlers)
+app.get("/api/admin/users", listProfiles as any);
+app.get("/api/admin/logins", listRecentLogins as any);
+app.get("/api/admin/activities", listRecentActivities as any);
+app.post("/api/admin/users", createUserAndProfile as any);
+
+// Processes
+app.get("/api/processes", listProcesses as any);
+
+const handler = serverless(app as any);
+export default function api(req: VercelRequest, res: VercelResponse) {
   return (handler as any)(req, res);
 }
