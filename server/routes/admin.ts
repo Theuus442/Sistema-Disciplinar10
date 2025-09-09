@@ -191,14 +191,20 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
 
     const users: any[] = [];
     let page = 1;
-    const perPage = 1000;
-    while (true) {
+    const perPage = 200;
+    const maxPages = 5;
+    while (page <= maxPages) {
       const { data, error } = await admin.auth.admin.listUsers({ page, perPage } as any);
-      if (error) return res.status(400).json({ error: error.message });
+      if (error) break;
       const batch = data?.users ?? [];
       users.push(...batch);
       if (batch.length < perPage) break;
       page += 1;
+    }
+    if (users.length === 0) {
+      const { data: profs } = await admin.from("profiles").select("id,nome").limit(10);
+      const fallback = (profs || []).map((p: any) => ({ id: p.id, email: "", nome: p.nome ?? "", lastSignInAt: null })).slice(0, 10);
+      return res.json(fallback);
     }
 
     const ids = users.map((u: any) => u.id).filter(Boolean);
@@ -261,8 +267,9 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     // Users created -> activities
     const users: any[] = [];
     let page = 1;
-    const perPage = 1000;
-    while (true) {
+    const perPage = 200;
+    const maxPages = 5;
+    while (page <= maxPages) {
       const { data, error } = await admin.auth.admin.listUsers({ page, perPage } as any);
       if (error) break;
       const batch = data?.users ?? [];
