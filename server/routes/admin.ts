@@ -62,8 +62,9 @@ async function ensureAdmin(req: any, res: any) {
 
 export const listProfiles: RequestHandler = async (_req, res) => {
   try {
-    const admin = getAdminClient();
-    if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
+    const ctx = await ensureAdmin(_req, res);
+    if (!ctx) return;
+    const admin = ctx.admin;
 
     const { data, error } = await admin.from("profiles").select("*");
     if (error) return res.status(400).json({ error: error.message });
