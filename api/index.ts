@@ -4,7 +4,7 @@ import serverless from "serverless-http";
 async function getCreateServer() {
   // Prefer the built server bundle produced by vite build:server
   try {
-    const m = await import("../dist/server/production.mjs");
+    const m = await import("../dist/server/node-build.mjs");
     const fn = (m as any).createServer || (m?.default?.createServer as any);
     if (typeof fn === "function") return fn;
   } catch {}
