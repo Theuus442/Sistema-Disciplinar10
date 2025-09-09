@@ -1,6 +1,9 @@
 import path from "path";
 import { createServer } from "./index";
 import * as express from "express";
+import path from "path";
+
+export { createServer } from "./index";
 
 const app = createServer();
 const port = process.env.PORT || 3000;
