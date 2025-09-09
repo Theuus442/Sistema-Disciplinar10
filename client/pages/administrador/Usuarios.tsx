@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile, type PerfilUsuario } from "@/lib/api";
+import { updateProfile, type PerfilUsuario, authHeaders } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { errorMessage } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ export default function UsuariosAdminPage() {
   const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
 
   const carregarUsuarios = async () => {
-    const res = await fetch("/api/admin/users");
+    const res = await fetch("/api/admin/users", { headers: await authHeaders() });
     if (!res.ok) {
       setUsuarios([]);
       return;
@@ -102,7 +102,7 @@ export default function UsuariosAdminPage() {
       } : undefined;
       const res = await fetch("/api/admin/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({ nome: novo.nome, email: novo.email, password: novo.password, perfil: novo.perfil, ativo: novo.ativo, employee }),
       });
 
