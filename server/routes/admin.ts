@@ -34,8 +34,20 @@ async function ensureAdmin(req: any, res: any) {
       res.status(500).json({ error: "Configuração Supabase ausente (URL/ANON)." });
       return null;
     }
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) {
+    // Decode JWT locally to get user id (sub) without network
+    let userId: string | null = null;
+    try {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf8"));
+        userId = payload?.sub ?? null;
+      }
+    } catch {}
+    if (!userId) {
+      const { data: userData } = await userClient.auth.getUser();
+      userId = (userData?.user as any)?.id ?? null;
+    }
+    if (!userId) {
       res.status(401).json({ error: "Token inválido." });
       return null;
     }
@@ -44,7 +56,7 @@ async function ensureAdmin(req: any, res: any) {
       res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
       return null;
     }
-    const { data: profile, error: profErr } = await admin.from("profiles").select("id,perfil").eq("id", userData.user.id).maybeSingle();
+    const { data: profile, error: profErr } = await admin.from("profiles").select("id,perfil").eq("id", userId).maybeSingle();
     if (profErr) {
       res.status(400).json({ error: profErr.message });
       return null;
@@ -53,7 +65,7 @@ async function ensureAdmin(req: any, res: any) {
       res.status(403).json({ error: "Acesso proibido: somente administradores." });
       return null;
     }
-    return { admin, userId: userData.user.id };
+    return { admin, userId };
   } catch (e: any) {
     res.status(500).json({ error: e?.message || String(e) });
     return null;
