@@ -227,8 +227,9 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
 
 export const listRecentActivities: RequestHandler = async (_req, res) => {
   try {
-    const admin = getAdminClient();
-    if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
+    const ctx = await ensureAdmin(_req, res);
+    if (!ctx) return;
+    const admin = ctx.admin;
 
     // Processes -> activities
     const { data: processes, error: procErr } = await admin.from("processes").select("*");
