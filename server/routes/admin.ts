@@ -212,8 +212,13 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
     const perPage = 200;
     const maxPages = 5;
     while (page <= maxPages) {
-      const { data, error } = await admin.auth.admin.listUsers({ page, perPage } as any);
-      if (error) break;
+      let data: any | null = null;
+      try {
+        const resp = await listUsersPageWithTimeout(admin, page, perPage);
+        data = resp?.data ?? null;
+      } catch {
+        break;
+      }
       const batch = data?.users ?? [];
       users.push(...batch);
       if (batch.length < perPage) break;
