@@ -207,26 +207,16 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
     if (!ctx) return;
     const admin = ctx.admin;
 
+    // Try a single fast page; fallback to profiles if slow/empty
     const users: any[] = [];
-    let page = 1;
-    const perPage = 200;
-    const maxPages = 5;
-    while (page <= maxPages) {
-      let data: any | null = null;
-      try {
-        const resp = await listUsersPageWithTimeout(admin, page, perPage);
-        data = resp?.data ?? null;
-      } catch {
-        break;
-      }
-      const batch = data?.users ?? [];
+    try {
+      const resp = await listUsersPageWithTimeout(admin, 1, 100, 5000);
+      const batch = resp?.data?.users ?? [];
       users.push(...batch);
-      if (batch.length < perPage) break;
-      page += 1;
-    }
+    } catch {}
     if (users.length === 0) {
-      const { data: profs } = await admin.from("profiles").select("id,nome").limit(10);
-      const fallback = (profs || []).map((p: any) => ({ id: p.id, email: "", nome: p.nome ?? "", lastSignInAt: null })).slice(0, 10);
+      const { data: profs } = await admin.from("profiles").select("id,nome,email").order("created_at", { ascending: false }).limit(10);
+      const fallback = (profs || []).map((p: any) => ({ id: p.id, email: p.email ?? "", nome: p.nome ?? "", lastSignInAt: null }));
       return res.json(fallback);
     }
 
@@ -287,39 +277,17 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
       })
       .filter(Boolean) as any[];
 
-    // Users created -> activities
-    const users: any[] = [];
-    let page = 1;
-    const perPage = 200;
-    const maxPages = 5;
-    while (page <= maxPages) {
-      let data: any | null = null;
-      try {
-        const resp = await listUsersPageWithTimeout(admin, page, perPage);
-        data = resp?.data ?? null;
-      } catch {
-        break;
-      }
-      const batch = data?.users ?? [];
-      users.push(...batch);
-      if (batch.length < perPage) break;
-      page += 1;
-    }
-
-    const userIds = users.map((u: any) => u.id).filter(Boolean);
-    const namesById = new Map<string, string>();
-    if (userIds.length) {
-      const { data: profs } = await admin.from("profiles").select("id,nome").in("id", userIds as any);
-      for (const p of profs || []) namesById.set((p as any).id, (p as any).nome ?? "");
-    }
-
-    const userActivities = users
-      .filter((u: any) => !!u?.created_at)
-      .map((u: any) => ({
-        id: `user:${u.id}`,
-        descricao: `Cadastro de usuário ${namesById.get(u.id) || u.email || u.id}`,
-        at: u.created_at as string,
-      }));
+    // Users created -> activities (no admin.listUsers to avoid timeouts)
+    const { data: recentProfiles } = await admin
+      .from("profiles")
+      .select("id,nome,created_at,email")
+      .order("created_at", { ascending: false })
+      .limit(15);
+    const userActivities = (recentProfiles || []).map((p: any) => ({
+      id: `user:${p.id}`,
+      descricao: `Cadastro de usuário ${p.nome || p.email || p.id}`,
+      at: p.created_at as string,
+    }));
 
     const all = [...procActivities, ...userActivities]
       .filter((a) => !!a.at)
