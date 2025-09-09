@@ -7,24 +7,38 @@ function sanitizeEnv(v?: string | null) {
   if (!t || t.toLowerCase() === "undefined" || t.toLowerCase() === "null") return undefined as any;
   return t;
 }
+
+function createFetchWithTimeout(defaultMs = 7000) {
+  return async (input: any, init?: any) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(new Error("fetch timeout")), init?.timeout ?? defaultMs);
+    try {
+      const res = await fetch(input, { ...init, signal: controller.signal });
+      return res as any;
+    } finally {
+      clearTimeout(id);
+    }
+  };
+}
+
 function getAdminClient() {
   const url = sanitizeEnv(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
   const serviceKey = sanitizeEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!url || !serviceKey) return null;
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
-}
-
-async function listUsersPageWithTimeout(admin: any, page: number, perPage: number, ms = 8000) {
-  const op = admin.auth.admin.listUsers({ page, perPage } as any);
-  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("listUsers timeout")), ms));
-  return Promise.race([op, timeout]) as Promise<any>;
+  return createClient(url, serviceKey, {
+    auth: { persistSession: false },
+    global: { fetch: createFetchWithTimeout(8000) } as any,
+  });
 }
 
 function getAnonClientWithToken(token: string) {
   const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
   const anon = sanitizeEnv((process.env as any).SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY);
   if (!url || !anon) return null as any;
-  return createClient(url, anon, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } as any });
+  return createClient(url, anon, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` }, fetch: createFetchWithTimeout(7000) } as any,
+  });
 }
 
 async function ensureAdmin(req: any, res: any) {
@@ -40,7 +54,7 @@ async function ensureAdmin(req: any, res: any) {
       res.status(500).json({ error: "Configuração Supabase ausente (URL/ANON)." });
       return null;
     }
-    // Decode JWT locally to get user id (sub) without network
+    // Decode JWT localmente para evitar chamada de rede
     let userId: string | null = null;
     try {
       const parts = token.split(".");
@@ -89,31 +103,18 @@ export const listProfiles: RequestHandler = async (_req, res) => {
 
     const rows = Array.isArray(data) ? data : [];
 
-    // Build a quick map for profile name lookup (used for gestor nome)
+    // Mapa de nomes para lookup rápido (gestor)
     const profileNameById = new Map<string, string>();
     for (const p of rows as any[]) {
       if (p?.id) profileNameById.set(p.id, p?.nome ?? "");
     }
 
-    // Fetch emails from auth.users to guarantee the real email (in case profiles.email is missing)
-    const emailMap = new Map<string, string>();
-    try {
-      let page = 1;
-      const perPage = 1000;
-      while (true) {
-        const { data: usersData, error: usersErr } = await admin.auth.admin.listUsers({ page, perPage } as any);
-        if (usersErr) break;
-        const users = usersData?.users ?? [];
-        for (const u of users) {
-          if (u && (u as any).id && (u as any).email) emailMap.set((u as any).id, (u as any).email);
-        }
-        if (users.length < perPage) break;
-        page += 1;
-      }
-    } catch {}
+    // Evitar chamadas ao auth.admin.listUsers (causa timeouts). Usar apenas profiles/email.
 
-    // Fetch employees for funcionario profiles and attach details
-    const funcionarioIds = rows.filter((p: any) => (p?.perfil ?? "funcionario") === "funcionario").map((p: any) => p.id);
+    // Funcionários relacionados
+    const funcionarioIds = rows
+      .filter((p: any) => (p?.perfil ?? "funcionario") === "funcionario")
+      .map((p: any) => p.id);
     let employeesById = new Map<string, any>();
     if (funcionarioIds.length > 0) {
       const { data: employeesData } = await admin.from("employees").select("*").in("id", funcionarioIds as any);
@@ -127,7 +128,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
       return {
         id: p.id,
         nome: p.nome ?? "",
-        email: (p.email ?? emailMap.get(p.id) ?? ""),
+        email: p.email ?? "",
         perfil: p.perfil ?? "funcionario",
         ativo: p.ativo ?? true,
         criadoEm: p.created_at ?? new Date().toISOString(),
@@ -207,37 +208,19 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
     if (!ctx) return;
     const admin = ctx.admin;
 
-    // Try a single fast page; fallback to profiles if slow/empty
-    const users: any[] = [];
-    try {
-      const resp = await listUsersPageWithTimeout(admin, 1, 100, 5000);
-      const batch = resp?.data?.users ?? [];
-      users.push(...batch);
-    } catch {}
-    if (users.length === 0) {
-      const { data: profs } = await admin.from("profiles").select("id,nome,email").order("created_at", { ascending: false }).limit(10);
-      const fallback = (profs || []).map((p: any) => ({ id: p.id, email: p.email ?? "", nome: p.nome ?? "", lastSignInAt: null }));
-      return res.json(fallback);
-    }
-
-    const ids = users.map((u: any) => u.id).filter(Boolean);
-    let namesById = new Map<string, string>();
-    if (ids.length) {
-      const { data: profs } = await admin.from("profiles").select("id,nome").in("id", ids as any);
-      for (const p of profs || []) namesById.set((p as any).id, (p as any).nome ?? "");
-    }
-
-    const list = users
-      .map((u: any) => ({
-        id: u.id,
-        email: u.email ?? "",
-        nome: namesById.get(u.id) ?? "",
-        lastSignInAt: u.last_sign_in_at ?? u.updated_at ?? u.created_at ?? null,
-      }))
-      .filter((u) => !!u.lastSignInAt)
-      .sort((a, b) => new Date(b.lastSignInAt as any).getTime() - new Date(a.lastSignInAt as any).getTime())
-      .slice(0, 10);
-
+    // Evitar chamadas ao auth.admin.listUsers (pode manter conexões abertas). Usar apenas profiles recentes.
+    const { data: profs, error } = await admin
+      .from("profiles")
+      .select("id,nome,email,created_at")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (error) return res.status(400).json({ error: error.message });
+    const list = (profs || []).map((p: any) => ({
+      id: p.id,
+      email: p.email ?? "",
+      nome: p.nome ?? "",
+      lastSignInAt: p.created_at ?? null,
+    }));
     return res.json(list);
   } catch (e: any) {
     return res.status(500).json({ error: e?.message || String(e) });
@@ -250,8 +233,12 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     if (!ctx) return;
     const admin = ctx.admin;
 
-    // Processes -> activities
-    const { data: processes, error: procErr } = await admin.from("processes").select("*");
+    // Limitar consultas para evitar payloads grandes
+    const { data: processes, error: procErr } = await admin
+      .from("processes")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
     if (procErr) return res.status(400).json({ error: procErr.message });
     const procs = Array.isArray(processes) ? processes : [];
 
@@ -277,12 +264,12 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
       })
       .filter(Boolean) as any[];
 
-    // Users created -> activities (no admin.listUsers to avoid timeouts)
+    // Users criados recentemente
     const { data: recentProfiles } = await admin
       .from("profiles")
       .select("id,nome,created_at,email")
       .order("created_at", { ascending: false })
-      .limit(15);
+      .limit(30);
     const userActivities = (recentProfiles || []).map((p: any) => ({
       id: `user:${p.id}`,
       descricao: `Cadastro de usuário ${p.nome || p.email || p.id}`,
