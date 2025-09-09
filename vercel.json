@@ -1,6 +1,10 @@
 {
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/spa",
+  "regions": ["gru1"],
+  "functions": {
+    "api/index.ts": { "maxDuration": 60, "regions": ["gru1"] }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.ts" },
     { "source": "/(.*)", "destination": "/index.html" }
