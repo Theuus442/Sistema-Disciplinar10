@@ -14,7 +14,7 @@ function getAdminClient() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
-async function getAnonClientWithToken(token: string) {
+function getAnonClientWithToken(token: string) {
   const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
   const anon = sanitizeEnv((process.env as any).SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY);
   if (!url || !anon) return null as any;
