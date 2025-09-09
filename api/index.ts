@@ -3,9 +3,7 @@ import serverless from "serverless-http";
 import express from "express";
 import cors from "cors";
 
-import { handleDemo } from "../server/routes/demo";
-import { createUserAndProfile, listProfiles, listRecentLogins, listRecentActivities } from "../server/routes/admin";
-import { listProcesses } from "../server/routes/processes";
+import { createServer } from "../dist/server/server.mjs";
 
 const app = express();
 app.use(cors());
