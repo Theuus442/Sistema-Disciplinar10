@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { authHeaders } from "@/lib/api";
 
 interface LoginItem {
   id: string;
@@ -28,7 +29,7 @@ export default function UltimosLogins() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("/api/admin/logins");
+        const res = await fetch("/api/admin/logins", { headers: await authHeaders() });
         if (!res.ok) throw new Error(`${res.status}`);
         const data = (await res.json()) as LoginItem[];
         if (mounted) setItems(Array.isArray(data) ? data : []);

@@ -7,6 +7,7 @@ import CartaoMetrica from "@/components/CartaoMetrica";
 import UltimosLogins from "@/components/UltimosLogins";
 import AtividadesRecentes from "@/components/AtividadesRecentes";
 import AcoesRapidas from "@/components/AcoesRapidas";
+import { authHeaders } from "@/lib/api";
 
 export default function AdministradorDashboard() {
   const navigate = Router.useNavigate();
@@ -20,7 +21,7 @@ export default function AdministradorDashboard() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("/api/admin/users");
+        const res = await fetch("/api/admin/users", { headers: await authHeaders() });
         const rows = (await res.json()) as any[];
         if (mounted) setTotalUsuarios(rows.length);
       } catch {}

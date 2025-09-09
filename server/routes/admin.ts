@@ -14,10 +14,57 @@ function getAdminClient() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
+function getAnonClientWithToken(token: string) {
+  const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
+  const anon = sanitizeEnv((process.env as any).SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY);
+  if (!url || !anon) return null as any;
+  return createClient(url, anon, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } as any });
+}
+
+async function ensureAdmin(req: any, res: any) {
+  try {
+    const auth = (req.headers?.authorization as string) || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
+    if (!token) {
+      res.status(401).json({ error: "Não autorizado: token não fornecido." });
+      return null;
+    }
+    const userClient = getAnonClientWithToken(token);
+    if (!userClient) {
+      res.status(500).json({ error: "Configuração Supabase ausente (URL/ANON)." });
+      return null;
+    }
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      res.status(401).json({ error: "Token inválido." });
+      return null;
+    }
+    const admin = getAdminClient();
+    if (!admin) {
+      res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
+      return null;
+    }
+    const { data: profile, error: profErr } = await admin.from("profiles").select("id,perfil").eq("id", userData.user.id).maybeSingle();
+    if (profErr) {
+      res.status(400).json({ error: profErr.message });
+      return null;
+    }
+    if ((profile?.perfil ?? "").toLowerCase() !== "administrador") {
+      res.status(403).json({ error: "Acesso proibido: somente administradores." });
+      return null;
+    }
+    return { admin, userId: userData.user.id };
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || String(e) });
+    return null;
+  }
+}
+
 export const listProfiles: RequestHandler = async (_req, res) => {
   try {
-    const admin = getAdminClient();
-    if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
+    const ctx = await ensureAdmin(_req, res);
+    if (!ctx) return;
+    const admin = ctx.admin;
 
     const { data, error } = await admin.from("profiles").select("*");
     if (error) return res.status(400).json({ error: error.message });
@@ -94,10 +141,9 @@ export const createUserAndProfile: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: "Campos obrigatórios: nome, email, password, perfil" });
     }
 
-    const admin = getAdminClient();
-    if (!admin) {
-      return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
-    }
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const admin = ctx.admin;
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
@@ -139,8 +185,9 @@ export const createUserAndProfile: RequestHandler = async (req, res) => {
 
 export const listRecentLogins: RequestHandler = async (_req, res) => {
   try {
-    const admin = getAdminClient();
-    if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
+    const ctx = await ensureAdmin(_req, res);
+    if (!ctx) return;
+    const admin = ctx.admin;
 
     const users: any[] = [];
     let page = 1;
@@ -180,8 +227,9 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
 
 export const listRecentActivities: RequestHandler = async (_req, res) => {
   try {
-    const admin = getAdminClient();
-    if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
+    const ctx = await ensureAdmin(_req, res);
+    if (!ctx) return;
+    const admin = ctx.admin;
 
     // Processes -> activities
     const { data: processes, error: procErr } = await admin.from("processes").select("*");
