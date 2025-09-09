@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { authHeaders } from "@/lib/api";
 
 interface ActivityItem {
   id: string;
@@ -27,7 +28,7 @@ export default function AtividadesRecentes() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("/api/admin/activities");
+        const res = await fetch("/api/admin/activities", { headers: await authHeaders() });
         if (!res.ok) throw new Error(`${res.status}`);
         const data = (await res.json()) as ActivityItem[];
         if (mounted) setItems(Array.isArray(data) ? data : []);
