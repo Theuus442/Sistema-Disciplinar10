@@ -27,11 +27,19 @@ function createFetchWithTimeout(defaultMs = 7000) {
 function getAdminClient() {
   const url = sanitizeEnv(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
   const serviceKey = sanitizeEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  if (!url || !serviceKey) return null;
-  return createClient(url, serviceKey, {
-    auth: { persistSession: false },
-    global: { fetch: createFetchWithTimeout(8000) } as any,
-  });
+  if (!url || !serviceKey) {
+    console.error('getAdminClient: missing SUPABASE SERVICE config', { VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL, SUPABASE_URL: !!process.env.SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY });
+    return null;
+  }
+  try {
+    return createClient(url, serviceKey, {
+      auth: { persistSession: false },
+      global: { fetch: createFetchWithTimeout(8000) } as any,
+    });
+  } catch (e: any) {
+    console.error('getAdminClient: createClient failed', e?.stack || e?.message || e);
+    throw e;
+  }
 }
 
 function getAnonClientWithToken(token: string) {
