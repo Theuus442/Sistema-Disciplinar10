@@ -110,6 +110,7 @@ async function ensureAdmin(req: any, res: any) {
     const db = admin ?? userClient;
     return { admin, db, userId };
   } catch (e: any) {
+    console.error('ensureAdmin error', e?.stack || e?.message || e);
     res.status(500).json({ error: e?.message || String(e) });
     return null;
   }
