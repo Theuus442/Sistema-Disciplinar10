@@ -83,21 +83,33 @@ async function ensureAdmin(req: any, res: any) {
       }
     } catch {}
     if (!userId) {
-      const { data: userData } = await userClient.auth.getUser();
-      userId = (userData?.user as any)?.id ?? null;
+      try {
+        const { data: userData } = await userClient.auth.getUser();
+        userId = (userData?.user as any)?.id ?? null;
+      } catch (e: any) {
+        console.error('ensureAdmin: auth.getUser failed', e?.stack || e?.message || e);
+        res.status(401).json({ error: 'Token inválido ou problema na autenticação.' });
+        return null;
+      }
     }
     if (!userId) {
       res.status(401).json({ error: "Token inválido." });
       return null;
     }
     // Verifica perfil usando o token do usuário (sem exigir service role)
-    const { data: profile, error: profErr } = await userClient
-      .from("profiles")
-      .select("id,perfil")
-      .eq("id", userId)
-      .maybeSingle();
-    if (profErr) {
-      res.status(400).json({ error: profErr.message });
+    let profile: any = null;
+    try {
+      const profResp = await userClient.from("profiles").select("id,perfil").eq("id", userId).maybeSingle();
+      // supabase-js may return { data, error } or throw; handle both
+      if (profResp && (profResp as any).error) {
+        console.error('ensureAdmin: profiles select returned error', (profResp as any).error);
+        res.status(401).json({ error: 'Token inválido ou sem permissão para acessar perfil.' });
+        return null;
+      }
+      profile = (profResp as any).data ?? profResp;
+    } catch (e: any) {
+      console.error('ensureAdmin: profiles select failed', e?.stack || e?.message || e);
+      res.status(401).json({ error: 'Token inválido ou sem permissão para acessar perfil.' });
       return null;
     }
     if ((profile?.perfil ?? "").toLowerCase() !== "administrador") {
