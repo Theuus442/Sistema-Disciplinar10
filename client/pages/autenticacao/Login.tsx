@@ -64,6 +64,10 @@ export default function Login() {
 
           if (profileById) {
             console.info("profile found by id:", profileById);
+            // Atualiza último acesso (melhor esforço; ignora erro se coluna não existir)
+            try {
+              await supabase.from("profiles").update({ ultimo_acesso: new Date().toISOString() } as any).eq("id", userId);
+            } catch {}
             handleRedirectByRole(profileById.perfil);
             return;
           }
