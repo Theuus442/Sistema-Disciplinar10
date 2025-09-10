@@ -216,16 +216,18 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
     // Evitar chamadas ao auth.admin.listUsers (pode manter conexões abertas). Usar apenas profiles recentes.
     const { data: profs, error } = await db
       .from("profiles")
-      .select("id,nome,email,created_at")
-      .order("created_at", { ascending: false })
-      .limit(10);
+      .select("*")
+      .limit(50);
     if (error) return res.status(400).json({ error: error.message });
-    const list = (profs || []).map((p: any) => ({
-      id: p.id,
-      email: p.email ?? "",
-      nome: p.nome ?? "",
-      lastSignInAt: p.created_at ?? null,
-    }));
+    const list = (profs || [])
+      .map((p: any) => ({
+        id: p.id,
+        email: p.email ?? p.user_email ?? "",
+        nome: p.nome ?? p.full_name ?? p.name ?? "",
+        lastSignInAt: p.created_at ?? p.createdAt ?? p.updated_at ?? p.updatedAt ?? null,
+      }))
+      .sort((a: any, b: any) => new Date(b.lastSignInAt || 0).getTime() - new Date(a.lastSignInAt || 0).getTime())
+      .slice(0, 10);
     return res.json(list);
   } catch (e: any) {
     return res.status(500).json({ error: e?.message || String(e) });
@@ -242,7 +244,6 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     const { data: processes, error: procErr } = await db
       .from("processes")
       .select("*")
-      .order("created_at", { ascending: false })
       .limit(200);
     if (procErr) return res.status(400).json({ error: procErr.message });
     const procs = Array.isArray(processes) ? processes : [];
