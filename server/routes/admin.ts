@@ -71,12 +71,12 @@ async function ensureAdmin(req: any, res: any) {
       res.status(401).json({ error: "Token inválido." });
       return null;
     }
-    const admin = getAdminClient();
-    if (!admin) {
-      res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
-      return null;
-    }
-    const { data: profile, error: profErr } = await admin.from("profiles").select("id,perfil").eq("id", userId).maybeSingle();
+    // Verifica perfil usando o token do usuário (sem exigir service role)
+    const { data: profile, error: profErr } = await userClient
+      .from("profiles")
+      .select("id,perfil")
+      .eq("id", userId)
+      .maybeSingle();
     if (profErr) {
       res.status(400).json({ error: profErr.message });
       return null;
@@ -85,7 +85,11 @@ async function ensureAdmin(req: any, res: any) {
       res.status(403).json({ error: "Acesso proibido: somente administradores." });
       return null;
     }
-    return { admin, userId };
+
+    // Tenta cliente elevado; se ausente, usa o client do usuário (respeitando RLS)
+    const admin = getAdminClient();
+    const db = admin ?? userClient;
+    return { admin, db, userId };
   } catch (e: any) {
     res.status(500).json({ error: e?.message || String(e) });
     return null;
@@ -96,9 +100,9 @@ export const listProfiles: RequestHandler = async (_req, res) => {
   try {
     const ctx = await ensureAdmin(_req, res);
     if (!ctx) return;
-    const admin = ctx.admin;
+    const db = ctx.db;
 
-    const { data, error } = await admin.from("profiles").select("*");
+    const { data, error } = await db.from("profiles").select("*");
     if (error) return res.status(400).json({ error: error.message });
 
     const rows = Array.isArray(data) ? data : [];
@@ -117,7 +121,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
       .map((p: any) => p.id);
     let employeesById = new Map<string, any>();
     if (funcionarioIds.length > 0) {
-      const { data: employeesData } = await admin.from("employees").select("*").in("id", funcionarioIds as any);
+      const { data: employeesData } = await db.from("employees").select("*").in("id", funcionarioIds as any);
       for (const e of employeesData || []) {
         employeesById.set((e as any).id, e);
       }
@@ -206,10 +210,10 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
   try {
     const ctx = await ensureAdmin(_req, res);
     if (!ctx) return;
-    const admin = ctx.admin;
+    const db = ctx.db;
 
     // Evitar chamadas ao auth.admin.listUsers (pode manter conexões abertas). Usar apenas profiles recentes.
-    const { data: profs, error } = await admin
+    const { data: profs, error } = await db
       .from("profiles")
       .select("id,nome,email,created_at")
       .order("created_at", { ascending: false })
@@ -231,10 +235,10 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
   try {
     const ctx = await ensureAdmin(_req, res);
     if (!ctx) return;
-    const admin = ctx.admin;
+    const db = ctx.db;
 
     // Limitar consultas para evitar payloads grandes
-    const { data: processes, error: procErr } = await admin
+    const { data: processes, error: procErr } = await db
       .from("processes")
       .select("*")
       .order("created_at", { ascending: false })
@@ -245,7 +249,7 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     const employeeIds = Array.from(new Set(procs.map((p: any) => p.employee_id).filter(Boolean)));
     const employeesById = new Map<string, any>();
     if (employeeIds.length) {
-      const { data: employees } = await admin.from("employees").select("*").in("id", employeeIds as any);
+      const { data: employees } = await db.from("employees").select("*").in("id", employeeIds as any);
       for (const e of employees || []) employeesById.set((e as any).id, e);
     }
 
@@ -265,7 +269,7 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
       .filter(Boolean) as any[];
 
     // Users criados recentemente
-    const { data: recentProfiles } = await admin
+    const { data: recentProfiles } = await db
       .from("profiles")
       .select("id,nome,created_at,email")
       .order("created_at", { ascending: false })
