@@ -102,7 +102,9 @@ export const listProfiles: RequestHandler = async (_req, res) => {
     if (!ctx) return;
     const db = ctx.db;
 
-    const { data, error } = await db.from("profiles").select("*");
+    const { data, error } = await db
+      .from("profiles")
+      .select("id,nome,perfil,ativo,email,created_at,updated_at,ultimo_acesso");
     if (error) return res.status(400).json({ error: error.message });
 
     const rows = Array.isArray(data) ? data : [];
