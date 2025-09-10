@@ -12,14 +12,13 @@ const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 const supabaseUrl = sanitizeEnv(rawUrl);
 const supabaseKey = sanitizeEnv(rawKey);
 
+let _supabase: any;
+
 if (!supabaseUrl || !supabaseKey) {
   console.warn(
     "Missing Supabase configuration: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. Supabase client will be a stub that throws when used."
   );
 
-  // Export a proxy stub so importing modules don't crash at load time. Any attempt to use the
-  // supabase client will throw a clear error guiding the developer to set the env vars or
-  // connect the Supabase MCP.
   const stub = new Proxy(
     {},
     {
@@ -36,7 +35,9 @@ if (!supabaseUrl || !supabaseKey) {
     }
   ) as any;
 
-  export const supabase = stub;
+  _supabase = stub;
 } else {
-  export const supabase = createClient(supabaseUrl, supabaseKey);
+  _supabase = createClient(supabaseUrl, supabaseKey);
 }
+
+export const supabase = _supabase;
