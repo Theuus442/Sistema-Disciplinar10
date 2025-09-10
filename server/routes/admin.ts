@@ -213,19 +213,36 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
     if (!ctx) return;
     const db = ctx.db;
 
-    // Evitar chamadas ao auth.admin.listUsers (pode manter conexões abertas). Usar apenas profiles recentes.
-    const { data: profs, error } = await db
-      .from("profiles")
-      .select("*")
-      .limit(50);
+    // Buscar perfis recententes e, se possível, enriquecer com last_sign_in_at via admin
+    const { data: profs, error } = await db.from("profiles").select("*").limit(100);
     if (error) return res.status(400).json({ error: error.message });
+
+    let lastById = new Map<string, string | null>();
+    if (ctx.admin) {
+      try {
+        const { data: usersResp } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 200 } as any);
+        const users = (usersResp as any)?.users || [];
+        for (const u of users) {
+          const last = u?.last_sign_in_at || u?.created_at || null;
+          if (u?.id) lastById.set(u.id, last);
+        }
+      } catch {}
+    }
+
     const list = (profs || [])
-      .map((p: any) => ({
-        id: p.id,
-        email: p.email ?? p.user_email ?? "",
-        nome: p.nome ?? p.full_name ?? p.name ?? "",
-        lastSignInAt: p.created_at ?? p.createdAt ?? p.updated_at ?? p.updatedAt ?? null,
-      }))
+      .map((p: any) => {
+        const ts =
+          lastById.get(p.id) ||
+          p.last_sign_in_at ||
+          p.ultimoAcesso || p.ultimo_acesso ||
+          p.created_at || p.createdAt || p.updated_at || p.updatedAt || null;
+        return {
+          id: p.id,
+          email: p.email ?? p.user_email ?? "",
+          nome: p.nome ?? p.full_name ?? p.name ?? "",
+          lastSignInAt: ts,
+        };
+      })
       .sort((a: any, b: any) => new Date(b.lastSignInAt || 0).getTime() - new Date(a.lastSignInAt || 0).getTime())
       .slice(0, 10);
     return res.json(list);
