@@ -45,11 +45,19 @@ function getAdminClient() {
 function getAnonClientWithToken(token: string) {
   const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
   const anon = sanitizeEnv((process.env as any).SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY);
-  if (!url || !anon) return null as any;
-  return createClient(url, anon, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` }, fetch: createFetchWithTimeout(7000) } as any,
-  });
+  if (!url || !anon) {
+    console.error('getAnonClientWithToken: missing SUPABASE ANON config', { SUPABASE_URL: !!process.env.SUPABASE_URL, VITE_SUPABASE_URL: !!(process.env as any).VITE_SUPABASE_URL, SUPABASE_ANON_KEY: !!(process.env as any).SUPABASE_ANON_KEY, VITE_SUPABASE_ANON_KEY: !!(process.env as any).VITE_SUPABASE_ANON_KEY });
+    return null as any;
+  }
+  try {
+    return createClient(url, anon, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` }, fetch: createFetchWithTimeout(7000) } as any,
+    });
+  } catch (e: any) {
+    console.error('getAnonClientWithToken: createClient failed', e?.stack || e?.message || e);
+    throw e;
+  }
 }
 
 async function ensureAdmin(req: any, res: any) {
