@@ -104,7 +104,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
 
     const { data, error } = await db
       .from("profiles")
-      .select("id,nome,perfil,ativo,email,created_at,updated_at,ultimo_acesso");
+      .select("*");
     if (error) return res.status(400).json({ error: error.message });
 
     const rows = Array.isArray(data) ? data : [];
@@ -145,8 +145,8 @@ export const listProfiles: RequestHandler = async (_req, res) => {
         email: p.email ?? emailById.get(p.id) ?? "",
         perfil: p.perfil ?? "funcionario",
         ativo: p.ativo ?? true,
-        criadoEm: p.created_at ?? new Date().toISOString(),
-        ultimoAcesso: p.ultimoAcesso ?? null,
+        criadoEm: p.created_at ?? p.createdAt ?? new Date().toISOString(),
+        ultimoAcesso: p.ultimo_acesso ?? p.ultimoAcesso ?? p.updated_at ?? p.updatedAt ?? null,
         funcionario: emp
           ? {
               nomeCompleto: emp.nome_completo ?? "",
