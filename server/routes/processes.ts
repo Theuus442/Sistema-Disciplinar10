@@ -31,7 +31,7 @@ export const listProcesses: RequestHandler = async (_req, res) => {
     const admin = getAdminClient();
     if (!admin) return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY ausente no servidor" });
 
-    const { data: processes, error: procErr } = await admin.from("processes").select("*").order("created_at", { ascending: false }).limit(200);
+    const { data: processes, error: procErr } = await admin.from("processes").select("*").limit(200);
     if (procErr) return res.status(400).json({ error: procErr.message });
     const procs = Array.isArray(processes) ? processes : [];
 
