@@ -11,10 +11,13 @@ function sanitizeEnv(v?: string | null) {
 function createFetchWithTimeout(defaultMs = 7000) {
   return async (input: any, init?: any) => {
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(new Error("fetch timeout")), init?.timeout ?? defaultMs);
+    const id = setTimeout(() => controller.abort(), init?.timeout ?? defaultMs);
     try {
       const res = await fetch(input, { ...init, signal: controller.signal });
       return res as any;
+    } catch (e: any) {
+      if (e && e.name === 'AbortError') throw new Error('fetch timeout');
+      throw e;
     } finally {
       clearTimeout(id);
     }
