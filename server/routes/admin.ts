@@ -182,6 +182,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
 
     return res.json(normalized);
   } catch (e: any) {
+    console.error('/api/admin/users error', e?.stack || e?.message || e);
     return res.status(500).json({ error: e?.message || String(e) });
   }
 };
