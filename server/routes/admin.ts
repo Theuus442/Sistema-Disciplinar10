@@ -113,7 +113,15 @@ export const listProfiles: RequestHandler = async (_req, res) => {
       if (p?.id) profileNameById.set(p.id, p?.nome ?? "");
     }
 
-    // Evitar chamadas ao auth.admin.listUsers (causa timeouts). Usar apenas profiles/email.
+    // Mapear emails via admin, se disponível; caso contrário, depender de profiles.email
+    const emailById = new Map<string, string>();
+    if (ctx.admin) {
+      try {
+        const { data: usersPage } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 200 } as any);
+        const users = (usersPage as any)?.users || [];
+        for (const u of users) if (u?.id && u?.email) emailById.set(u.id, u.email);
+      } catch {}
+    }
 
     // Funcionários relacionados
     const funcionarioIds = rows
@@ -132,7 +140,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
       return {
         id: p.id,
         nome: p.nome ?? "",
-        email: p.email ?? "",
+        email: p.email ?? emailById.get(p.id) ?? "",
         perfil: p.perfil ?? "funcionario",
         ativo: p.ativo ?? true,
         criadoEm: p.created_at ?? new Date().toISOString(),
