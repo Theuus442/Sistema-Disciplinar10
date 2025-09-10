@@ -3,7 +3,7 @@ import serverless from "serverless-http";
 import express from "express";
 import cors from "cors";
 
-import { createServer } from "../server/index.ts";
+import { createServer } from "../dist/server/server.mjs";
 
 const app = createServer();
 const handler = serverless(app as any);
