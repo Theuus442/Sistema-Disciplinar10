@@ -274,33 +274,35 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
 
     const procActivities = procs
       .map((p: any) => {
-        const at = p?.created_at ?? p?.data_ocorrencia ?? p?.createdAt ?? p?.dataOcorrencia ?? null;
-        if (!at) return null;
+        const at =
+          p?.created_at || p?.data_ocorrencia || p?.updated_at ||
+          p?.createdAt || p?.dataOcorrencia || p?.updatedAt || new Date().toISOString();
         const emp = employeesById.get(p.employee_id);
         const nome = emp?.nome_completo ?? "Funcionário";
         const tipo = p.tipo_desvio ?? "Processo";
         return {
           id: `process:${p.id}`,
           descricao: `Abertura de processo (${tipo}) para ${nome}`,
-          at: at as string,
+          at: String(at),
         };
-      })
-      .filter(Boolean) as any[];
+      });
 
-    // Users criados recentemente
-    const { data: recentProfiles } = await db
+    // Usuários criados/atualizados recentemente (flexível a diferentes colunas)
+    const { data: recentProfiles, error: profilesErr } = await db
       .from("profiles")
-      .select("id,nome,created_at,email")
-      .order("created_at", { ascending: false })
-      .limit(30);
-    const userActivities = (recentProfiles || []).map((p: any) => ({
-      id: `user:${p.id}`,
-      descricao: `Cadastro de usuário ${p.nome || p.email || p.id}`,
-      at: p.created_at as string,
-    }));
+      .select("*")
+      .limit(100);
+    if (profilesErr) return res.status(400).json({ error: profilesErr.message });
+    const userActivities = (recentProfiles || []).map((p: any) => {
+      const at = p.ultimo_acesso || p.ultimoAcesso || p.updated_at || p.updatedAt || p.created_at || p.createdAt || new Date().toISOString();
+      return {
+        id: `user:${p.id}`,
+        descricao: `Cadastro de usuário ${p.nome || p.email || p.id}`,
+        at: String(at),
+      };
+    });
 
     const all = [...procActivities, ...userActivities]
-      .filter((a) => !!a.at)
       .sort((a, b) => new Date(b.at as any).getTime() - new Date(a.at as any).getTime())
       .slice(0, 15);
 
