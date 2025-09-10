@@ -11,10 +11,13 @@ function sanitizeEnv(v?: string | null) {
 function createFetchWithTimeout(defaultMs = 7000) {
   return async (input: any, init?: any) => {
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(new Error("fetch timeout")), init?.timeout ?? defaultMs);
+    const id = setTimeout(() => controller.abort(), init?.timeout ?? defaultMs);
     try {
       const res = await fetch(input, { ...init, signal: controller.signal });
       return res as any;
+    } catch (e: any) {
+      if (e && e.name === 'AbortError') throw new Error('fetch timeout');
+      throw e;
     } finally {
       clearTimeout(id);
     }
@@ -24,21 +27,37 @@ function createFetchWithTimeout(defaultMs = 7000) {
 function getAdminClient() {
   const url = sanitizeEnv(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
   const serviceKey = sanitizeEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  if (!url || !serviceKey) return null;
-  return createClient(url, serviceKey, {
-    auth: { persistSession: false },
-    global: { fetch: createFetchWithTimeout(8000) } as any,
-  });
+  if (!url || !serviceKey) {
+    console.error('getAdminClient: missing SUPABASE SERVICE config', { VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL, SUPABASE_URL: !!process.env.SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY });
+    return null;
+  }
+  try {
+    return createClient(url, serviceKey, {
+      auth: { persistSession: false },
+      global: { fetch: createFetchWithTimeout(8000) } as any,
+    });
+  } catch (e: any) {
+    console.error('getAdminClient: createClient failed', e?.stack || e?.message || e);
+    throw e;
+  }
 }
 
 function getAnonClientWithToken(token: string) {
   const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
   const anon = sanitizeEnv((process.env as any).SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY);
-  if (!url || !anon) return null as any;
-  return createClient(url, anon, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` }, fetch: createFetchWithTimeout(7000) } as any,
-  });
+  if (!url || !anon) {
+    console.error('getAnonClientWithToken: missing SUPABASE ANON config', { SUPABASE_URL: !!process.env.SUPABASE_URL, VITE_SUPABASE_URL: !!(process.env as any).VITE_SUPABASE_URL, SUPABASE_ANON_KEY: !!(process.env as any).SUPABASE_ANON_KEY, VITE_SUPABASE_ANON_KEY: !!(process.env as any).VITE_SUPABASE_ANON_KEY });
+    return null as any;
+  }
+  try {
+    return createClient(url, anon, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` }, fetch: createFetchWithTimeout(7000) } as any,
+    });
+  } catch (e: any) {
+    console.error('getAnonClientWithToken: createClient failed', e?.stack || e?.message || e);
+    throw e;
+  }
 }
 
 async function ensureAdmin(req: any, res: any) {
@@ -64,21 +83,33 @@ async function ensureAdmin(req: any, res: any) {
       }
     } catch {}
     if (!userId) {
-      const { data: userData } = await userClient.auth.getUser();
-      userId = (userData?.user as any)?.id ?? null;
+      try {
+        const { data: userData } = await userClient.auth.getUser();
+        userId = (userData?.user as any)?.id ?? null;
+      } catch (e: any) {
+        console.error('ensureAdmin: auth.getUser failed', e?.stack || e?.message || e);
+        res.status(401).json({ error: 'Token inválido ou problema na autenticação.' });
+        return null;
+      }
     }
     if (!userId) {
       res.status(401).json({ error: "Token inválido." });
       return null;
     }
     // Verifica perfil usando o token do usuário (sem exigir service role)
-    const { data: profile, error: profErr } = await userClient
-      .from("profiles")
-      .select("id,perfil")
-      .eq("id", userId)
-      .maybeSingle();
-    if (profErr) {
-      res.status(400).json({ error: profErr.message });
+    let profile: any = null;
+    try {
+      const profResp = await userClient.from("profiles").select("id,perfil").eq("id", userId).maybeSingle();
+      // supabase-js may return { data, error } or throw; handle both
+      if (profResp && (profResp as any).error) {
+        console.error('ensureAdmin: profiles select returned error', (profResp as any).error);
+        res.status(401).json({ error: 'Token inválido ou sem permissão para acessar perfil.' });
+        return null;
+      }
+      profile = (profResp as any).data ?? profResp;
+    } catch (e: any) {
+      console.error('ensureAdmin: profiles select failed', e?.stack || e?.message || e);
+      res.status(401).json({ error: 'Token inválido ou sem permissão para acessar perfil.' });
       return null;
     }
     if ((profile?.perfil ?? "").toLowerCase() !== "administrador") {
@@ -91,6 +122,7 @@ async function ensureAdmin(req: any, res: any) {
     const db = admin ?? userClient;
     return { admin, db, userId };
   } catch (e: any) {
+    console.error('ensureAdmin error', e?.stack || e?.message || e);
     res.status(500).json({ error: e?.message || String(e) });
     return null;
   }
@@ -162,6 +194,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
 
     return res.json(normalized);
   } catch (e: any) {
+    console.error('/api/admin/users error', e?.stack || e?.message || e);
     return res.status(500).json({ error: e?.message || String(e) });
   }
 };
