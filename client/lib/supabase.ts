@@ -13,7 +13,30 @@ const supabaseUrl = sanitizeEnv(rawUrl);
 const supabaseKey = sanitizeEnv(rawKey);
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing Supabase configuration: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY");
-}
+  console.warn(
+    "Missing Supabase configuration: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. Supabase client will be a stub that throws when used."
+  );
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+  // Export a proxy stub so importing modules don't crash at load time. Any attempt to use the
+  // supabase client will throw a clear error guiding the developer to set the env vars or
+  // connect the Supabase MCP.
+  const stub = new Proxy(
+    {},
+    {
+      get() {
+        throw new Error(
+          "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment or connect Supabase via the MCP."
+        );
+      },
+      apply() {
+        throw new Error(
+          "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment or connect Supabase via the MCP."
+        );
+      },
+    }
+  ) as any;
+
+  export const supabase = stub;
+} else {
+  export const supabase = createClient(supabaseUrl, supabaseKey);
+}
