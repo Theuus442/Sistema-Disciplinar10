@@ -31,5 +31,8 @@ export function createServer() {
   // Processes listing (service role)
   app.get("/api/processes", listProcesses as any);
 
+  // Diagnostics endpoint to be used for debugging Vercel environment — protected by ADMIN_DIAG_TOKEN
+  app.get("/api/admin/diagnostics", adminDiagnostics as any);
+
   return app;
 }
