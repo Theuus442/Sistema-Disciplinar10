@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
-import { createUserAndProfile, listProfiles, listRecentLogins, listRecentActivities } from "./routes/admin";
+import { createUserAndProfile, listProfiles, listRecentLogins, listRecentActivities, listPermissions, getProfilePermissions, addProfilePermission, removeProfilePermission, importEmployees } from "./routes/admin";
 import { listProcesses } from "./routes/processes";
 
 export function createServer() {
