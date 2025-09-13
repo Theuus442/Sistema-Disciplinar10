@@ -35,9 +35,6 @@ export function createServer() {
   // Import employees (CSV)
   app.post("/api/admin/import-employees", importEmployees as any);
 
-  // Test service role (temporary) - validates service role client can query DB
-  app.get("/api/admin/_test_service_role", testServiceRole as any);
-
   // Processes listing (service role)
   app.get("/api/processes", listProcesses as any);
 
