@@ -12,6 +12,7 @@ import GestorDashboard from "./pages/gestor/GestorDashboard";
 import AdministradorDashboard from "./pages/administrador/AdministradorDashboard";
 import UsuariosAdminPage from "./pages/administrador/Usuarios";
 import ConfiguracoesSistemaAdminPage from "./pages/administrador/ConfiguracoesSistema";
+import ImportarFuncionariosPage from "./pages/administrador/ImportarFuncionarios";
 import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
 import RevisaoProcessoJuridico from "./pages/juridico/RevisaoProcessoJuridico";
 import ProcessosAguardandoAnalise from "./pages/juridico/ProcessosAguardandoAnalise";
