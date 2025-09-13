@@ -60,7 +60,14 @@ export default function RevisaoProcessoJuridico() {
         toast({ title: "Número da Ocorrência no SI é obrigatório", description: "Informe o número da ocorrência para finalizar o processo." });
         return;
       }
-      const patch = { status: "Finalizado" as any, resolucao: `${resolucao}${parecerJuridico ? ` — Parecer: ${parecerJuridico}` : ""}`, si_occurrence_number: numeroOcorrenciaSI.trim() } as any;
+      const patch = {
+        status: "Finalizado" as any,
+        resolucao: `${resolucao}${parecerJuridico ? ` — Parecer: ${parecerJuridico}` : ""}`,
+        si_occurrence_number: numeroOcorrenciaSI.trim(),
+        notification_email_1: notifyEmail1?.trim() || null,
+        notification_email_2: notifyEmail2?.trim() || null,
+        notification_email_3: notifyEmail3?.trim() || null,
+      } as any;
       const { updateProcess } = await import("@/lib/api");
       await updateProcess(idProcesso, patch as any);
       toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
