@@ -4,6 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SisDisciplinar</title>
+    <script>
+      // Prevent dev websocket reconnects in proxied preview environments (eg. fly.dev) which break HMR.
+      // This stub is only active in non-local hosts to avoid interfering with local dev where HMR is useful.
+      try {
+        if (typeof window !== 'undefined' && window.location && !window.location.hostname.match(/(^localhost$|^127\.|^0:0:0:0:0:0:0:1$)/)) {
+          // Replace WebSocket with a no-op stub to avoid invalid frame header errors coming from proxies.
+          window.__ORIGINAL_WEBSOCKET__ = window.WebSocket;
+          window.WebSocket = class {
+            constructor() { console.warn('Dev WebSocket stub active (preview environment)'); }
+            send() {}
+            close() {}
+            addEventListener() {}
+            removeEventListener() {}
+            onopen = null; onmessage = null; onclose = null; onerror = null;
+          };
+        }
+      } catch (e) {}
+    </script>
   </head>
 
   <body>

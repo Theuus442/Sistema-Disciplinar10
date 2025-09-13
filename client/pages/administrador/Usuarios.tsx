@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { updateProfile, type PerfilUsuario, authHeaders } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -29,6 +30,49 @@ export default function UsuariosAdminPage() {
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
   const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
+
+  // Permissions management
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [profilePermissions, setProfilePermissions] = useState<Record<string, string[]>>({});
+
+  const loadPermissions = async () => {
+    try {
+      const res = await fetch('/api/admin/permissions', { headers: await authHeaders() });
+      if (!res.ok) return;
+      const perms = await res.json();
+      setPermissions(Array.isArray(perms) ? perms : []);
+    } catch (e) {}
+  };
+
+  const loadProfilePermissions = async () => {
+    try {
+      const res = await fetch('/api/admin/profile-permissions', { headers: await authHeaders() });
+      if (!res.ok) return;
+      const map = await res.json();
+      setProfilePermissions(map || {});
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    loadPermissions();
+    loadProfilePermissions();
+  }, []);
+
+  const togglePermission = async (perfil: string, permission: string, grant: boolean) => {
+    const old = { ...profilePermissions };
+    try {
+      if (grant) {
+        setProfilePermissions((prev) => ({ ...prev, [perfil]: [...(prev[perfil] || []), permission] }));
+        await fetch('/api/admin/profile-permissions', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) }, body: JSON.stringify({ perfil, permission }) });
+      } else {
+        setProfilePermissions((prev) => ({ ...prev, [perfil]: (prev[perfil] || []).filter((p) => p !== permission) }));
+        await fetch('/api/admin/profile-permissions', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) }, body: JSON.stringify({ perfil, permission }) });
+      }
+    } catch (e: any) {
+      setProfilePermissions(old);
+      toast({ title: 'Erro ao atualizar permissão', description: (e && (e as any).message) || 'Tente novamente' });
+    }
+  };
 
   const carregarUsuarios = async () => {
     const res = await fetch("/api/admin/users", { headers: await authHeaders() });
@@ -291,6 +335,32 @@ export default function UsuariosAdminPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Permissões por Perfil */}
+            <Card className="border-sis-border bg-white">
+              <CardHeader>
+                <CardTitle className="text-lg">Permissões por Perfil</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {['administrador','gestor','juridico','funcionario'].map((perfil) => (
+                    <div key={perfil} className="rounded-md border border-sis-border p-4">
+                      <h3 className="font-medium capitalize mb-2">{perfil}</h3>
+                      <div className="space-y-2">
+                        {permissions.map((perm) => (
+                          <div key={perm} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Checkbox checked={!!(profilePermissions[perfil] && profilePermissions[perfil].includes(perm))} onCheckedChange={(v) => togglePermission(perfil, perm, Boolean(v))} />
+                              <div className="text-sm">{perm}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Modal de Edição */}
             <Dialog open={abrirEditar} onOpenChange={setAbrirEditar}>

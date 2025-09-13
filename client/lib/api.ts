@@ -19,6 +19,7 @@ export interface ProcessoAPI {
   status?: string | null;
   juridico_responsavel_user_id?: string | null;
   resolucao?: string | null;
+  si_occurrence_number?: string | null;
   created_at?: string | null;
 }
 
@@ -117,7 +118,19 @@ export async function updateProfile(id: string, patch: { nome?: string; perfil?:
 }
 
 export async function updateProcess(id: string, patch: Partial<ProcessoAPI>) {
-  const { error } = await supabase.from("processes").update(patch as any).eq("id", id);
+  const normalizedStatus = typeof patch.status === "string" ? patch.status.replace(/_/g, " ") : undefined;
+  if (normalizedStatus === "Finalizado") {
+    const occ = (patch as any).si_occurrence_number ?? (patch as any).siOccurrenceNumber ?? null;
+    if (!occ || String(occ).trim() === "") {
+      throw new Error("Para finalizar, preencha o Número da Ocorrência no SI (si_occurrence_number).");
+    }
+  }
+  const payload: any = { ...patch };
+  if ((payload as any).siOccurrenceNumber && !payload.si_occurrence_number) {
+    payload.si_occurrence_number = (payload as any).siOccurrenceNumber;
+    delete payload.siOccurrenceNumber;
+  }
+  const { error } = await supabase.from("processes").update(payload).eq("id", id);
   if (error) throw error;
 }
 

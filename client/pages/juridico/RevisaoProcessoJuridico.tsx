@@ -24,6 +24,10 @@ export default function RevisaoProcessoJuridico() {
   const [parecerJuridico, setParecerJuridico] = useState<string>("");
   const [decisao, setDecisao] = useState<string>("");
   const [medidaRecomendada, setMedidaRecomendada] = useState<string>("");
+  const [numeroOcorrenciaSI, setNumeroOcorrenciaSI] = useState<string>("");
+  const [notifyEmail1, setNotifyEmail1] = useState<string>("");
+  const [notifyEmail2, setNotifyEmail2] = useState<string>("");
+  const [notifyEmail3, setNotifyEmail3] = useState<string>("");
 
   useEffect(() => {
     let mounted = true;
@@ -52,7 +56,18 @@ export default function RevisaoProcessoJuridico() {
         : "Recomendação: Justa Causa Direta";
 
     try {
-      const patch = { status: "Finalizado" as any, resolucao: `${resolucao}${parecerJuridico ? ` — Parecer: ${parecerJuridico}` : ""}` };
+      if (!numeroOcorrenciaSI || numeroOcorrenciaSI.trim() === "") {
+        toast({ title: "Número da Ocorrência no SI é obrigatório", description: "Informe o número da ocorrência para finalizar o processo." });
+        return;
+      }
+      const patch = {
+        status: "Finalizado" as any,
+        resolucao: `${resolucao}${parecerJuridico ? ` — Parecer: ${parecerJuridico}` : ""}`,
+        si_occurrence_number: numeroOcorrenciaSI.trim(),
+        notification_email_1: notifyEmail1?.trim() || null,
+        notification_email_2: notifyEmail2?.trim() || null,
+        notification_email_3: notifyEmail3?.trim() || null,
+      } as any;
       const { updateProcess } = await import("@/lib/api");
       await updateProcess(idProcesso, patch as any);
       toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
@@ -199,6 +214,26 @@ export default function RevisaoProcessoJuridico() {
                               </Select>
                             </div>
                           )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div className="md:col-span-2">
+                            <Label className="mb-2 block text-xs text-sis-secondary-text">Número da Ocorrência no SI</Label>
+                            <Input
+                              placeholder="Ex.: SI-2025-000123"
+                              value={numeroOcorrenciaSI}
+                              onChange={(e) => setNumeroOcorrenciaSI(e.target.value)}
+                            />
+                            <p className="mt-1 text-xs text-sis-secondary-text">Obrigatório para finalizar o processo.</p>
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <Label className="mb-2 block text-xs text-sis-secondary-text">E-mails para notificação (opcionais)</Label>
+                            <Input placeholder="E-mail 1" value={notifyEmail1} onChange={(e) => setNotifyEmail1(e.target.value)} className="mb-2" />
+                            <Input placeholder="E-mail 2" value={notifyEmail2} onChange={(e) => setNotifyEmail2(e.target.value)} className="mb-2" />
+                            <Input placeholder="E-mail 3" value={notifyEmail3} onChange={(e) => setNotifyEmail3(e.target.value)} />
+                            <p className="mt-1 text-xs text-sis-secondary-text">Serão enviados relatorios para estes e‑mails quando o processo for finalizado.</p>
+                          </div>
                         </div>
 
                         <div className="flex gap-3 pt-2">

@@ -7,6 +7,7 @@ import { errorMessage } from "@/lib/utils";
 export default function GestorRegistrarDesvio() {
   const [funcionarioId, setFuncionarioId] = useState("");
   const [funcionarios, setFuncionarios] = useState<Array<{ id: string; nome: string }>>([]);
+  const [misconductTypes, setMisconductTypes] = useState<Array<{ id: string; name: string; default_classification?: string }>>([]);
   const [dataOcorrencia, setDataOcorrencia] = useState("");
   const [tipoDesvio, setTipoDesvio] = useState("");
   const [classificacao, setClassificacao] = useState("");
@@ -16,13 +17,16 @@ export default function GestorRegistrarDesvio() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data, error } = await supabase.from("employees").select("id,nome_completo,matricula");
-      if (error) {
-        console.error(error);
-        return;
+      const [{ data: employees }, { data: types, error: typesErr }] = await Promise.all([
+        supabase.from("employees").select("id,nome_completo,matricula"),
+        supabase.from("misconduct_types").select("id,name,default_classification"),
+      ] as any);
+      if (employees && mounted) setFuncionarios((employees || []).map((e: any) => ({ id: e.id, nome: e.nome_completo ?? e.matricula ?? e.id })));
+      if (typesErr) {
+        // misconduct_types pode não existir; ignorar com aviso
+        console.warn('Could not load misconduct_types:', typesErr.message || typesErr);
       }
-      if (!mounted) return;
-      setFuncionarios((data || []).map((e: any) => ({ id: e.id, nome: e.nome_completo ?? e.matricula ?? e.id })));
+      if (types && mounted) setMisconductTypes((types || []) as any);
     })();
     return () => { mounted = false; };
   }, []);
@@ -49,6 +53,7 @@ export default function GestorRegistrarDesvio() {
         id: genId(),
         employee_id: funcionarioId,
         tipo_desvio: tipoDesvio,
+        misconduct_type_id: misconductTypes.find((t) => t.id === tipoDesvio || t.name === tipoDesvio)?.id ?? null,
         classificacao: classificacao === "Média" ? "Media" : classificacao,
         descricao,
         status: "Em_Analise",
@@ -129,19 +134,34 @@ export default function GestorRegistrarDesvio() {
                   </label>
                   <select
                     value={tipoDesvio}
-                    onChange={(e) => setTipoDesvio(e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setTipoDesvio(v);
+                      const found = misconductTypes.find((t) => t.id === v || t.name === v);
+                      if (found && found.default_classification) {
+                        setClassificacao(found.default_classification === 'Media' ? 'Média' : found.default_classification);
+                      }
+                    }}
                     className="w-full rounded-md border border-sis-border bg-white px-3 py-2 font-roboto text-sm text-sis-dark-text focus:border-sis-blue focus:outline-none focus:ring-1 focus:ring-sis-blue"
                   >
                     <option value="" disabled>
                       Selecione...
                     </option>
-                    <option>Atraso</option>
-                    <option>Falta Injustificada</option>
-                    <option>Comportamento Inadequado</option>
-                    <option>Uso Indevido de Recursos</option>
-                    <option>Descumprimento de Normas</option>
-                    <option>Quebra de Confidencialidade</option>
-                    <option>Outro</option>
+                    {misconductTypes.length > 0 ? (
+                      misconductTypes.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option>Atraso</option>
+                        <option>Falta Injustificada</option>
+                        <option>Comportamento Inadequado</option>
+                        <option>Uso Indevido de Recursos</option>
+                        <option>Descumprimento de Normas</option>
+                        <option>Quebra de Confidencialidade</option>
+                        <option>Outro</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
