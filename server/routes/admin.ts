@@ -157,7 +157,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
       } catch {}
     }
 
-    // Funcionários relacionados
+    // Funcion��rios relacionados
     const funcionarioIds = rows
       .filter((p: any) => (p?.perfil ?? "funcionario") === "funcionario")
       .map((p: any) => p.id);
@@ -446,6 +446,114 @@ export const removeProfilePermission: RequestHandler = async (req, res) => {
       return res.status(500).json({ error: e?.message || String(e) });
     }
   } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
+// ------------------------- Import employees (CSV) -------------------------
+
+function parseCsvToObjects(csvText: string) {
+  // Very small CSV parser handling quoted fields and commas
+  const rows: string[][] = [];
+  let cur = '';
+  let row: string[] = [];
+  let inQuotes = false;
+  for (let i = 0; i < csvText.length; i++) {
+    const ch = csvText[i];
+    const next = csvText[i + 1];
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        cur += '"';
+        i++; // skip escaped quote
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      row.push(cur);
+      cur = '';
+    } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (cur !== '' || row.length > 0) {
+        row.push(cur);
+        rows.push(row);
+        row = [];
+        cur = '';
+      }
+      // handle CRLF
+      if (ch === '\r' && next === '\n') i++;
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur !== '' || row.length > 0) {
+    row.push(cur);
+    rows.push(row);
+  }
+  if (rows.length === 0) return [];
+  const headers = rows[0].map((h) => h.trim());
+  const objs: any[] = [];
+  for (let r = 1; r < rows.length; r++) {
+    const values = rows[r];
+    if (values.length === 1 && values[0].trim() === '') continue; // skip empty line
+    const obj: any = {};
+    for (let c = 0; c < headers.length; c++) {
+      obj[headers[c]] = (values[c] ?? '').trim();
+    }
+    objs.push(obj);
+  }
+  return objs;
+}
+
+export const importEmployees: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+
+    // Expect JSON payload: { csv: '...' }
+    const body = req.body as any;
+    const csv = body?.csv as string | undefined;
+    if (!csv) return res.status(400).json({ error: 'csv required in body (as text)' });
+
+    const objs = parseCsvToObjects(csv);
+    if (!Array.isArray(objs)) return res.status(400).json({ error: 'Invalid CSV' });
+    if (objs.length === 0) return res.json({ inserted: 0, updated: 0, errors: 0, details: [] });
+
+    const details: any[] = [];
+    const toUpsert: any[] = [];
+    const matriculas = new Set<string>();
+    for (const row of objs) {
+      const matricula = (row['matricula'] ?? row['matrícula'] ?? '').trim();
+      if (!matricula) {
+        details.push({ row, error: 'matricula missing' });
+        continue;
+      }
+      const nome_completo = (row['nome_completo'] ?? row['nome'] ?? '').trim();
+      const cargo = (row['cargo'] ?? '').trim() || null;
+      const setor = (row['setor'] ?? '').trim() || null;
+      const gestor_id = (row['gestor_id'] ?? '').trim() || null;
+      toUpsert.push({ matricula, nome_completo, cargo, setor, gestor_id });
+      matriculas.add(matricula);
+    }
+
+    // Query existing by matricula
+    const { data: existing, error: existErr } = await db.from('employees').select('matricula').in('matricula', Array.from(matriculas) as any);
+    if (existErr) {
+      console.error('Error fetching existing employees', existErr);
+    }
+    const existingSet = new Set((existing || []).map((e: any) => e.matricula));
+
+    const inserted = toUpsert.filter((t) => !existingSet.has(t.matricula)).length;
+    const updated = toUpsert.filter((t) => existingSet.has(t.matricula)).length;
+
+    // Perform upsert (on conflict matricula)
+    const { error: upsertErr } = await db.from('employees').upsert(toUpsert as any, { onConflict: 'matricula' });
+    if (upsertErr) {
+      return res.status(500).json({ error: upsertErr.message || String(upsertErr) });
+    }
+
+    return res.json({ inserted, updated, errors: details.length, details });
+  } catch (e: any) {
+    console.error('importEmployees error', e?.stack || e?.message || e);
     return res.status(500).json({ error: e?.message || String(e) });
   }
 };
