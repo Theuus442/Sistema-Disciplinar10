@@ -57,6 +57,7 @@ const App = () => (
           <Route path="/gestor" element={<GestorDashboard />} />
           <Route path="/administrador" element={<AdministradorDashboard />} />
           <Route path="/administrador/usuarios" element={<UsuariosAdminPage />} />
+          <Route path="/administrador/importar-funcionarios" element={<RequireRole allowed={["administrador"]}><ImportarFuncionariosPage /></RequireRole>} />
           <Route path="/administrador/configuracoes" element={<RequireRole allowed={["administrador"]}><ConfiguracoesSistemaAdminPage /></RequireRole>} />
           <Route path="/juridico" element={<JuridicoDashboard />} />
           <Route path="/juridico/processos/aguardando" element={<ProcessosAguardandoAnalise />} />
