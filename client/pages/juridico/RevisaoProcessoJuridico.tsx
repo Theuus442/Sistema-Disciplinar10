@@ -226,6 +226,14 @@ export default function RevisaoProcessoJuridico() {
                             />
                             <p className="mt-1 text-xs text-sis-secondary-text">Obrigatório para finalizar o processo.</p>
                           </div>
+
+                          <div className="md:col-span-2">
+                            <Label className="mb-2 block text-xs text-sis-secondary-text">E-mails para notificação (opcionais)</Label>
+                            <Input placeholder="E-mail 1" value={notifyEmail1} onChange={(e) => setNotifyEmail1(e.target.value)} className="mb-2" />
+                            <Input placeholder="E-mail 2" value={notifyEmail2} onChange={(e) => setNotifyEmail2(e.target.value)} className="mb-2" />
+                            <Input placeholder="E-mail 3" value={notifyEmail3} onChange={(e) => setNotifyEmail3(e.target.value)} />
+                            <p className="mt-1 text-xs text-sis-secondary-text">Serão enviados relatorios para estes e‑mails quando o processo for finalizado.</p>
+                          </div>
                         </div>
 
                         <div className="flex gap-3 pt-2">
