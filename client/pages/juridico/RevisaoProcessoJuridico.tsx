@@ -157,7 +157,7 @@ export default function RevisaoProcessoJuridico() {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Resultado da Análise</Label>
-                            <p className="font-medium text-sis-dark-text">{processoJuridico?.status || "—"}</p>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.status || "��"}</p>
                           </div>
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Medida Recomendada/Aplicada</Label>
@@ -204,6 +204,18 @@ export default function RevisaoProcessoJuridico() {
                               </Select>
                             </div>
                           )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div className="md:col-span-2">
+                            <Label className="mb-2 block text-xs text-sis-secondary-text">Número da Ocorrência no SI</Label>
+                            <Input
+                              placeholder="Ex.: SI-2025-000123"
+                              value={numeroOcorrenciaSI}
+                              onChange={(e) => setNumeroOcorrenciaSI(e.target.value)}
+                            />
+                            <p className="mt-1 text-xs text-sis-secondary-text">Obrigatório para finalizar o processo.</p>
+                          </div>
                         </div>
 
                         <div className="flex gap-3 pt-2">
