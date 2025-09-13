@@ -24,6 +24,7 @@ export default function RevisaoProcessoJuridico() {
   const [parecerJuridico, setParecerJuridico] = useState<string>("");
   const [decisao, setDecisao] = useState<string>("");
   const [medidaRecomendada, setMedidaRecomendada] = useState<string>("");
+  const [numeroOcorrenciaSI, setNumeroOcorrenciaSI] = useState<string>("");
 
   useEffect(() => {
     let mounted = true;
