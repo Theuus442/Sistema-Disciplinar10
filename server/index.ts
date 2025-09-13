@@ -3,7 +3,6 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { createUserAndProfile, listProfiles, listRecentLogins, listRecentActivities, listPermissions, getProfilePermissions, addProfilePermission, removeProfilePermission, importEmployees } from "./routes/admin";
-import { testServiceRole } from "./routes/admin_test";
 import { listProcesses } from "./routes/processes";
 
 export function createServer() {
