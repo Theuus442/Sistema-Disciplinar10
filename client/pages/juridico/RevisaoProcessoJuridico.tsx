@@ -25,6 +25,9 @@ export default function RevisaoProcessoJuridico() {
   const [decisao, setDecisao] = useState<string>("");
   const [medidaRecomendada, setMedidaRecomendada] = useState<string>("");
   const [numeroOcorrenciaSI, setNumeroOcorrenciaSI] = useState<string>("");
+  const [notifyEmail1, setNotifyEmail1] = useState<string>("");
+  const [notifyEmail2, setNotifyEmail2] = useState<string>("");
+  const [notifyEmail3, setNotifyEmail3] = useState<string>("");
 
   useEffect(() => {
     let mounted = true;
@@ -157,7 +160,7 @@ export default function RevisaoProcessoJuridico() {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Resultado da Análise</Label>
-                            <p className="font-medium text-sis-dark-text">{processoJuridico?.status || "��"}</p>
+                            <p className="font-medium text-sis-dark-text">{processoJuridico?.status || "—"}</p>
                           </div>
                           <div>
                             <Label className="text-xs text-sis-secondary-text">Medida Recomendada/Aplicada</Label>
