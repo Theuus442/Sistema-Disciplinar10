@@ -7,6 +7,7 @@ import { errorMessage } from "@/lib/utils";
 export default function GestorRegistrarDesvio() {
   const [funcionarioId, setFuncionarioId] = useState("");
   const [funcionarios, setFuncionarios] = useState<Array<{ id: string; nome: string }>>([]);
+  const [misconductTypes, setMisconductTypes] = useState<Array<{ id: string; name: string; default_classification?: string }>>([]);
   const [dataOcorrencia, setDataOcorrencia] = useState("");
   const [tipoDesvio, setTipoDesvio] = useState("");
   const [classificacao, setClassificacao] = useState("");
@@ -16,13 +17,16 @@ export default function GestorRegistrarDesvio() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data, error } = await supabase.from("employees").select("id,nome_completo,matricula");
-      if (error) {
-        console.error(error);
-        return;
+      const [{ data: employees }, { data: types, error: typesErr }] = await Promise.all([
+        supabase.from("employees").select("id,nome_completo,matricula"),
+        supabase.from("misconduct_types").select("id,name,default_classification"),
+      ] as any);
+      if (employees && mounted) setFuncionarios((employees || []).map((e: any) => ({ id: e.id, nome: e.nome_completo ?? e.matricula ?? e.id })));
+      if (typesErr) {
+        // misconduct_types pode não existir; ignorar com aviso
+        console.warn('Could not load misconduct_types:', typesErr.message || typesErr);
       }
-      if (!mounted) return;
-      setFuncionarios((data || []).map((e: any) => ({ id: e.id, nome: e.nome_completo ?? e.matricula ?? e.id })));
+      if (types && mounted) setMisconductTypes((types || []) as any);
     })();
     return () => { mounted = false; };
   }, []);
