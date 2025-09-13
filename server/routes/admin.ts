@@ -64,27 +64,48 @@ async function ensureAdmin(req: any, res: any) {
   try {
     const auth = (req.headers?.authorization as string) || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
+
+    console.info('ensureAdmin: received authorization header?', !!auth, 'headerLength', auth?.length ?? 0);
     if (!token) {
+      console.warn('ensureAdmin: no token provided');
       res.status(401).json({ error: "Não autorizado: token não fornecido." });
       return null;
     }
+
+    const masked = token && token.length > 16 ? `${token.slice(0,8)}...${token.slice(-8)}` : token;
+    console.info('ensureAdmin: token masked preview=', masked, 'tokenLength=', token.length);
+
     const userClient = getAnonClientWithToken(token);
     if (!userClient) {
+      console.error('ensureAdmin: failed to create anon client with provided token');
       res.status(500).json({ error: "Configuração Supabase ausente (URL/ANON)." });
       return null;
     }
-    // Decode JWT localmente para evitar chamada de rede
+    console.info('ensureAdmin: userClient created successfully');
+
+    // Decode JWT localmente to get possible user id without network call
     let userId: string | null = null;
+    let decodedPayload: any = null;
     try {
-      const parts = token.split(".");
+      const parts = token.split('.');
       if (parts.length === 3) {
-        const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf8"));
-        userId = payload?.sub ?? null;
+        decodedPayload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+        userId = decodedPayload?.sub ?? null;
+        console.info('ensureAdmin: decoded JWT payload', decodedPayload);
       }
-    } catch {}
+    } catch (err) {
+      console.warn('ensureAdmin: failed to decode JWT locally', err);
+    }
+
     if (!userId) {
       try {
-        const { data: userData } = await userClient.auth.getUser();
+        const { data: userData, error: getUserErr } = await userClient.auth.getUser();
+        if (getUserErr) {
+          console.error('ensureAdmin: userClient.auth.getUser returned error', getUserErr);
+          res.status(401).json({ error: 'Token inválido ou problema na autenticação.' });
+          return null;
+        }
+        console.info('ensureAdmin: auth.getUser result', { userData });
         userId = (userData?.user as any)?.id ?? null;
       } catch (e: any) {
         console.error('ensureAdmin: auth.getUser failed', e?.stack || e?.message || e);
@@ -92,33 +113,48 @@ async function ensureAdmin(req: any, res: any) {
         return null;
       }
     }
+
     if (!userId) {
+      console.error('ensureAdmin: could not determine userId from token or auth.getUser');
       res.status(401).json({ error: "Token inválido." });
       return null;
     }
-    // Verifica perfil usando o token do usuário (sem exigir service role)
+
+    console.info('ensureAdmin: resolved userId=', userId);
+
+    // Verify profile using the user token (no service role required for this check)
     let profile: any = null;
     try {
-      const profResp = await userClient.from("profiles").select("id,perfil").eq("id", userId).maybeSingle();
-      // supabase-js may return { data, error } or throw; handle both
+      const profResp = await userClient.from('profiles').select('id,perfil,nome,email').eq('id', userId).maybeSingle();
+      console.info('ensureAdmin: profiles select response', profResp);
+
       if (profResp && (profResp as any).error) {
         console.error('ensureAdmin: profiles select returned error', (profResp as any).error);
         res.status(401).json({ error: 'Token inválido ou sem permissão para acessar perfil.' });
         return null;
       }
+
       profile = (profResp as any).data ?? profResp;
+      console.info('ensureAdmin: profile found for userId', userId, profile);
     } catch (e: any) {
       console.error('ensureAdmin: profiles select failed', e?.stack || e?.message || e);
       res.status(401).json({ error: 'Token inválido ou sem permissão para acessar perfil.' });
       return null;
     }
-    if ((profile?.perfil ?? "").toLowerCase() !== "administrador") {
+
+    const perfilLower = (profile?.perfil ?? '').toLowerCase();
+    console.info('ensureAdmin: profile.perfil (normalized)=', perfilLower);
+    if (perfilLower !== 'administrador') {
+      console.warn('ensureAdmin: access denied - not an administrador');
       res.status(403).json({ error: "Acesso proibido: somente administradores." });
       return null;
     }
 
-    // Tenta cliente elevado; se ausente, usa o client do usuário (respeitando RLS)
+    // Try elevated client; fall back to userClient if service role is not configured
     const admin = getAdminClient();
+    if (admin) console.info('ensureAdmin: admin client available (service role)');
+    else console.info('ensureAdmin: admin client NOT available, will use user client (respecting RLS)');
+
     const db = admin ?? userClient;
     return { admin, db, userId };
   } catch (e: any) {
