@@ -53,7 +53,11 @@ export default function RevisaoProcessoJuridico() {
         : "Recomendação: Justa Causa Direta";
 
     try {
-      const patch = { status: "Finalizado" as any, resolucao: `${resolucao}${parecerJuridico ? ` — Parecer: ${parecerJuridico}` : ""}` };
+      if (!numeroOcorrenciaSI || numeroOcorrenciaSI.trim() === "") {
+        toast({ title: "Número da Ocorrência no SI é obrigatório", description: "Informe o número da ocorrência para finalizar o processo." });
+        return;
+      }
+      const patch = { status: "Finalizado" as any, resolucao: `${resolucao}${parecerJuridico ? ` — Parecer: ${parecerJuridico}` : ""}`, si_occurrence_number: numeroOcorrenciaSI.trim() } as any;
       const { updateProcess } = await import("@/lib/api");
       await updateProcess(idProcesso, patch as any);
       toast({ title: "Análise finalizada", description: "Decisão salva com sucesso." });
