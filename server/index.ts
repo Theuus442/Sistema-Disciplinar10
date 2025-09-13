@@ -32,6 +32,9 @@ export function createServer() {
   app.post("/api/admin/profile-permissions", addProfilePermission as any);
   app.delete("/api/admin/profile-permissions", removeProfilePermission as any);
 
+  // Import employees (CSV)
+  app.post("/api/admin/import-employees", importEmployees as any);
+
   // Processes listing (service role)
   app.get("/api/processes", listProcesses as any);
 
