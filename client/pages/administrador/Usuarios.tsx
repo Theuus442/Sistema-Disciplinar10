@@ -30,6 +30,49 @@ export default function UsuariosAdminPage() {
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
   const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
 
+  // Permissions management
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [profilePermissions, setProfilePermissions] = useState<Record<string, string[]>>({});
+
+  const loadPermissions = async () => {
+    try {
+      const res = await fetch('/api/admin/permissions', { headers: await authHeaders() });
+      if (!res.ok) return;
+      const perms = await res.json();
+      setPermissions(Array.isArray(perms) ? perms : []);
+    } catch (e) {}
+  };
+
+  const loadProfilePermissions = async () => {
+    try {
+      const res = await fetch('/api/admin/profile-permissions', { headers: await authHeaders() });
+      if (!res.ok) return;
+      const map = await res.json();
+      setProfilePermissions(map || {});
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    loadPermissions();
+    loadProfilePermissions();
+  }, []);
+
+  const togglePermission = async (perfil: string, permission: string, grant: boolean) => {
+    const old = { ...profilePermissions };
+    try {
+      if (grant) {
+        setProfilePermissions((prev) => ({ ...prev, [perfil]: [...(prev[perfil] || []), permission] }));
+        await fetch('/api/admin/profile-permissions', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) }, body: JSON.stringify({ perfil, permission }) });
+      } else {
+        setProfilePermissions((prev) => ({ ...prev, [perfil]: (prev[perfil] || []).filter((p) => p !== permission) }));
+        await fetch('/api/admin/profile-permissions', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) }, body: JSON.stringify({ perfil, permission }) });
+      }
+    } catch (e: any) {
+      setProfilePermissions(old);
+      toast({ title: 'Erro ao atualizar permissão', description: (e && (e as any).message) || 'Tente novamente' });
+    }
+  };
+
   const carregarUsuarios = async () => {
     const res = await fetch("/api/admin/users", { headers: await authHeaders() });
     if (!res.ok) {
