@@ -292,6 +292,32 @@ export default function UsuariosAdminPage() {
               </Table>
             </div>
 
+            {/* Permissões por Perfil */}
+            <Card className="border-sis-border bg-white">
+              <CardHeader>
+                <CardTitle className="text-lg">Permissões por Perfil</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {['administrador','gestor','juridico','funcionario'].map((perfil) => (
+                    <div key={perfil} className="rounded-md border border-sis-border p-4">
+                      <h3 className="font-medium capitalize mb-2">{perfil}</h3>
+                      <div className="space-y-2">
+                        {permissions.map((perm) => (
+                          <div key={perm} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Checkbox checked={!!(profilePermissions[perfil] && profilePermissions[perfil].includes(perm))} onCheckedChange={(v) => togglePermission(perfil, perm, Boolean(v))} />
+                              <div className="text-sm">{perm}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Modal de Edição */}
             <Dialog open={abrirEditar} onOpenChange={setAbrirEditar}>
               <DialogContent className="sm:max-w-[540px] max-h-[85vh] overflow-y-auto">
