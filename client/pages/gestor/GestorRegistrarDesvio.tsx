@@ -14,6 +14,11 @@ export default function GestorRegistrarDesvio() {
   const [descricao, setDescricao] = useState("");
   const [anexos, setAnexos] = useState<File[]>([]);
 
+  // Histórico disciplinar do funcionário selecionado
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -30,6 +35,41 @@ export default function GestorRegistrarDesvio() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // When a funcionário is selected, fetch their disciplinary history via RPC
+  useEffect(() => {
+    let mounted = true;
+    if (!funcionarioId) {
+      setHistory([]);
+      setHistoryError(null);
+      setHistoryLoading(false);
+      return () => { mounted = false; };
+    }
+
+    (async () => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const { data, error } = await supabase.rpc('get_employee_history', { p_employee_id: funcionarioId }) as any;
+        if (!mounted) return;
+        if (error) {
+          console.error('RPC get_employee_history error:', error);
+          setHistoryError(error?.message || String(error));
+          setHistory([]);
+        } else {
+          setHistory(Array.isArray(data) ? data : (data ? [data] : []));
+        }
+      } catch (err: any) {
+        console.error('Unexpected error fetching history:', err);
+        if (mounted) setHistoryError(errorMessage(err) || String(err));
+        if (mounted) setHistory([]);
+      } finally {
+        if (mounted) setHistoryLoading(false);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [funcionarioId]);
 
   const enviarFormulario = async (e: FormEvent) => {
     e.preventDefault();
@@ -71,6 +111,7 @@ export default function GestorRegistrarDesvio() {
       setClassificacao("");
       setDescricao("");
       setAnexos([]);
+      setHistory([]);
     } catch (err: any) {
       console.error(err);
       toast.error(errorMessage(err) || "Erro ao registrar desvio");
@@ -81,6 +122,17 @@ export default function GestorRegistrarDesvio() {
     const files = Array.from(e.target.files || []);
     setAnexos(files);
   };
+
+  function formatDate(value: any) {
+    try {
+      if (!value) return "-";
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return String(value);
+      return d.toLocaleDateString();
+    } catch {
+      return String(value);
+    }
+  }
 
   return (
     <div className="flex h-screen bg-sis-bg-light">
@@ -124,6 +176,41 @@ export default function GestorRegistrarDesvio() {
                     className="w-full rounded-md border border-sis-border bg-white px-3 py-2 font-roboto text-sm text-sis-dark-text focus:border-sis-blue focus:outline-none focus:ring-1 focus:ring-sis-blue"
                   />
                 </div>
+              </div>
+
+              {/* Histórico Disciplinar Prévio */}
+              <div className="mt-2 rounded-md border border-sis-border bg-gray-50 p-4">
+                <h3 className="mb-3 font-open-sans text-lg font-semibold text-sis-dark-text">Histórico Disciplinar Prévio</h3>
+                {historyLoading ? (
+                  <div className="font-roboto text-sm text-sis-secondary-text">Carregando histórico...</div>
+                ) : historyError ? (
+                  <div className="font-roboto text-sm text-red-600">Erro ao carregar histórico: {historyError}</div>
+                ) : history.length === 0 ? (
+                  <div className="font-roboto text-sm text-sis-secondary-text">Nenhuma ocorrência anterior encontrada</div>
+                ) : (
+                  <div className="overflow-auto">
+                    <table className="w-full table-auto text-left text-sm">
+                      <thead>
+                        <tr>
+                          <th className="pb-2 pr-4 font-roboto font-medium text-sis-secondary-text">Data da Ocorrência</th>
+                          <th className="pb-2 pr-4 font-roboto font-medium text-sis-secondary-text">Tipo de Desvio</th>
+                          <th className="pb-2 pr-4 font-roboto font-medium text-sis-secondary-text">Classificação</th>
+                          <th className="pb-2 pr-4 font-roboto font-medium text-sis-secondary-text">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {history.map((h, idx) => (
+                          <tr key={`${h.id ?? idx}`} className="border-t">
+                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{formatDate(h.data_ocorrencia ?? h.created_at ?? h.data)}</td>
+                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.tipo_desvio ?? h.misconduct_type ?? h.tipo ?? '-'}</td>
+                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.classificacao ?? h.classification ?? '-'}</td>
+                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.status ?? '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               {/* Tipo de desvio */}
