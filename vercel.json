@@ -3,7 +3,7 @@
   "outputDirectory": "dist/spa",
   "regions": ["gru1"],
   "functions": {
-    "api/**": { "maxDuration": 60, "includeFiles": "dist/server/**" }
+    "api/**": { "runtime": "nodejs20.x", "maxDuration": 60, "includeFiles": "dist/server/**" }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.ts" },
