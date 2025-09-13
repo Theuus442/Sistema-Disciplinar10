@@ -53,6 +53,7 @@ export default function GestorRegistrarDesvio() {
         id: genId(),
         employee_id: funcionarioId,
         tipo_desvio: tipoDesvio,
+        misconduct_type_id: misconductTypes.find((t) => t.id === tipoDesvio || t.name === tipoDesvio)?.id ?? null,
         classificacao: classificacao === "Média" ? "Media" : classificacao,
         descricao,
         status: "Em_Analise",
