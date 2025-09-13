@@ -354,3 +354,98 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     return res.status(500).json({ error: e?.message || String(e) });
   }
 };
+
+// ------------------------- Permissions management -------------------------
+
+export const listPermissions: RequestHandler = async (_req, res) => {
+  try {
+    const ctx = await ensureAdmin(_req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+
+    // Tenta ler da tabela permissions; se não existir, retorna lista padrão
+    try {
+      const { data, error } = await db.from('permissions').select('permission, description');
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return res.json((data as any).map((d: any) => d.permission));
+      }
+    } catch (e) {
+      // ignore - tabela pode não existir
+    }
+
+    // Lista padrão
+    return res.json([
+      'process:criar',
+      'process:ver',
+      'process:finalizar',
+      'relatorios:ver',
+      'usuarios:gerenciar',
+    ]);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
+export const getProfilePermissions: RequestHandler = async (_req, res) => {
+  try {
+    const ctx = await ensureAdmin(_req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+
+    try {
+      const { data, error } = await db.from('profile_permissions').select('*');
+      if (error) return res.status(400).json({ error: error.message });
+      const rows = Array.isArray(data) ? data : [];
+      // Agrupar por perfil
+      const byProfile: Record<string, string[]> = {};
+      for (const r of rows as any[]) {
+        const p = r.perfil || 'unknown';
+        byProfile[p] = byProfile[p] || [];
+        byProfile[p].push(r.permission);
+      }
+      return res.json(byProfile);
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || String(e) });
+    }
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
+export const addProfilePermission: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+    const { perfil, permission } = req.body as any;
+    if (!perfil || !permission) return res.status(400).json({ error: 'perfil and permission required' });
+    try {
+      const { error } = await db.from('profile_permissions').insert({ perfil, permission });
+      if (error) return res.status(400).json({ error: error.message });
+      return res.json({ ok: true });
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || String(e) });
+    }
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
+export const removeProfilePermission: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+    const { perfil, permission } = req.body as any;
+    if (!perfil || !permission) return res.status(400).json({ error: 'perfil and permission required' });
+    try {
+      const { error } = await db.from('profile_permissions').delete().eq('perfil', perfil).eq('permission', permission);
+      if (error) return res.status(400).json({ error: error.message });
+      return res.json({ ok: true });
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || String(e) });
+    }
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
