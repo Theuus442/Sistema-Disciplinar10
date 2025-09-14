@@ -5,7 +5,8 @@
   "functions": {
     "api/**": { "maxDuration": 60, "includeFiles": "dist/server/**" }
   },
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
