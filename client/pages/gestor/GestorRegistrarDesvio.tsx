@@ -58,7 +58,7 @@ export default function GestorRegistrarDesvio() {
           try {
             const { data: rows, error: e2 } = await supabase
               .from('processes')
-              .select('id, tipo_desvio, classificacao, status, created_at, data_ocorrencia')
+              .select('*')
               .eq('employee_id', funcionarioId)
               .order('created_at', { ascending: false });
             if (e2) {
