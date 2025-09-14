@@ -491,6 +491,89 @@ export const removeProfilePermission: RequestHandler = async (req, res) => {
   }
 };
 
+// --------- User-specific permissions (fallback to profile_permissions with key user:{id}) ---------
+
+async function getUserPerms(db: any, userId: string): Promise<string[]> {
+  try {
+    const { data, error } = await db.from('user_permissions').select('permission').eq('user_id', userId);
+    if (error) throw error;
+    return (data || []).map((r: any) => r.permission);
+  } catch (e: any) {
+    if (await tableMissing(e)) {
+      try {
+        const { data, error } = await db.from('profile_permissions').select('permission').eq('perfil', `user:${userId}`);
+        if (error) throw error;
+        return (data || []).map((r: any) => r.permission);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
+}
+
+export const getUserPermissions: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+    const userId = String(req.params.userId || req.query.userId || '').trim();
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const perms = await getUserPerms(db, userId);
+    return res.json(perms);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
+export const addUserPermission: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+    const { userId, permission } = req.body as any;
+    if (!userId || !permission) return res.status(400).json({ error: 'userId and permission required' });
+    try {
+      const { error } = await db.from('user_permissions').insert({ user_id: userId, permission });
+      if (error) throw error;
+    } catch (e: any) {
+      if (await tableMissing(e)) {
+        const { error: fbErr } = await db.from('profile_permissions').insert({ perfil: `user:${userId}`, permission });
+        if (fbErr) return res.status(400).json({ error: fbErr.message });
+      } else {
+        return res.status(400).json({ error: e?.message || String(e) });
+      }
+    }
+    return res.json({ ok: true });
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
+export const removeUserPermission: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+    const { userId, permission } = req.body as any;
+    if (!userId || !permission) return res.status(400).json({ error: 'userId and permission required' });
+    try {
+      const { error } = await db.from('user_permissions').delete().eq('user_id', userId).eq('permission', permission);
+      if (error) throw error;
+    } catch (e: any) {
+      if (await tableMissing(e)) {
+        const { error: fbErr } = await db.from('profile_permissions').delete().eq('perfil', `user:${userId}`).eq('permission', permission);
+        if (fbErr) return res.status(400).json({ error: fbErr.message });
+      } else {
+        return res.status(400).json({ error: e?.message || String(e) });
+      }
+    }
+    return res.json({ ok: true });
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
 // ------------------------- Import employees (CSV) -------------------------
 
 function parseCsvToObjects(csvText: string) {
