@@ -46,34 +46,38 @@ if (typeof window !== "undefined" && (window as any).ResizeObserver) {
 
 const queryClient = new QueryClient();
 
+import ErrorBoundary from "@/components/ErrorBoundary";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/gestor" element={<GestorDashboard />} />
-          <Route path="/administrador" element={<AdministradorDashboard />} />
-          <Route path="/administrador/usuarios" element={<UsuariosAdminPage />} />
-          <Route path="/administrador/importar-funcionarios" element={<RequireRole allowed={["administrador"]}><ImportarFuncionariosPage /></RequireRole>} />
-          <Route path="/administrador/configuracoes" element={<RequireRole allowed={["administrador"]}><ConfiguracoesSistemaAdminPage /></RequireRole>} />
-          <Route path="/juridico" element={<JuridicoDashboard />} />
-          <Route path="/juridico/processos/aguardando" element={<ProcessosAguardandoAnalise />} />
-          <Route path="/juridico/processos/todos" element={<TodosProcessos />} />
-          <Route path="/juridico/relatorios" element={<Relatorios />} />
-          <Route path="/juridico/processos/:id" element={<RevisaoProcessoJuridico />} />
-          <Route path="/gestor/registrar" element={<GestorRegistrarDesvio />} />
-          <Route path="/gestor/processos" element={<ProcessosPage />} />
-          <Route path="/gestor/processos/:id" element={<ProcessoAcompanhamento />} />
-          <Route path="/gestor/funcionarios" element={<FuncionariosListaPage />} />
-          <Route path="/gestor/funcionarios/:id" element={<FuncionarioPage />} />
-          {/* ADICIONE TODAS AS ROTAS PERSONALIZADAS ACIMA DA ROTA CATCH-ALL "*" */}
-          <Route path="*" element={<NaoEncontrado />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ErrorBoundary>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/gestor" element={<GestorDashboard />} />
+            <Route path="/administrador" element={<AdministradorDashboard />} />
+            <Route path="/administrador/usuarios" element={<UsuariosAdminPage />} />
+            <Route path="/administrador/importar-funcionarios" element={<RequireRole allowed={["administrador"]}><ImportarFuncionariosPage /></RequireRole>} />
+            <Route path="/administrador/configuracoes" element={<RequireRole allowed={["administrador"]}><ConfiguracoesSistemaAdminPage /></RequireRole>} />
+            <Route path="/juridico" element={<JuridicoDashboard />} />
+            <Route path="/juridico/processos/aguardando" element={<ProcessosAguardandoAnalise />} />
+            <Route path="/juridico/processos/todos" element={<TodosProcessos />} />
+            <Route path="/juridico/relatorios" element={<Relatorios />} />
+            <Route path="/juridico/processos/:id" element={<RevisaoProcessoJuridico />} />
+            <Route path="/gestor/registrar" element={<GestorRegistrarDesvio />} />
+            <Route path="/gestor/processos" element={<ProcessosPage />} />
+            <Route path="/gestor/processos/:id" element={<ProcessoAcompanhamento />} />
+            <Route path="/gestor/funcionarios" element={<FuncionariosListaPage />} />
+            <Route path="/gestor/funcionarios/:id" element={<FuncionarioPage />} />
+            {/* ADICIONE TODAS AS ROTAS PERSONALIZADAS ACIMA DA ROTA CATCH-ALL "*" */}
+            <Route path="*" element={<NaoEncontrado />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ErrorBoundary>
   </QueryClientProvider>
 );
 
