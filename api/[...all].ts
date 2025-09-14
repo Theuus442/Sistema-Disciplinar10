@@ -1,8 +1,5 @@
-import serverless from "serverless-http";
-import { createServer } from "../dist/server/server.mjs";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const app = createServer();
-const handler = serverless(app as any);
-export default function api(req: any, res: any) {
-  return (handler as any)(req, res);
+export default function handler(_req: VercelRequest, res: VercelResponse) {
+  res.status(404).json({ error: 'Endpoint not found' });
 }
