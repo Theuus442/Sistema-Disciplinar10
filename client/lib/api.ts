@@ -30,7 +30,7 @@ export async function fetchEmployees() {
   const { data: processes } = await supabase
     .from("processes")
     .select(`
-      id, employee_id, classificacao, resolucao, status, created_at, data_ocorrencia,
+      id, employee_id, classificacao, resolucao, status, created_at, data_da_ocorrencia,
       misconduct_types ( name )
     `);
   const { data: profiles } = await supabase.from("profiles").select("*");
@@ -49,7 +49,7 @@ export async function fetchEmployees() {
         .filter((pr) => pr.employee_id === e.id)
         .map((pr) => ({
           id: pr.id,
-          dataOcorrencia: (() => { const d = pr.created_at ?? pr.data_ocorrencia ?? pr.createdAt ?? pr.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
+          dataOcorrencia: (() => { const d = pr.created_at ?? (pr as any).data_da_ocorrencia ?? pr.createdAt ?? (pr as any).dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
           tipoDesvio: (pr as any)?.misconduct_types?.name ?? "",
           classificacao: pr.classificacao ? (pr.classificacao === "Media" ? "Média" : pr.classificacao) : ("Leve" as any),
           medidaAplicada: pr.resolucao ?? pr.descricao ?? "",
@@ -73,7 +73,7 @@ export async function fetchProcesses() {
   const { data: processes } = await supabase
     .from("processes")
     .select(`
-      id, status, classificacao, resolucao, created_at, data_ocorrencia,
+      id, status, classificacao, resolucao, created_at, data_da_ocorrencia,
       employees ( nome_completo ),
       misconduct_types ( name )
     `);
@@ -82,8 +82,8 @@ export async function fetchProcesses() {
     funcionario: p.employees?.nome_completo ?? "",
     tipoDesvio: p.misconduct_types?.name ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
-    dataAbertura: (() => { const d = p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
-    createdAt: (p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia) ?? null,
+    dataAbertura: (() => { const d = p.created_at ?? (p as any).data_da_ocorrencia ?? p.createdAt ?? (p as any).dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
+    createdAt: (p.created_at ?? (p as any).data_da_ocorrencia ?? p.createdAt ?? (p as any).dataOcorrencia) ?? null,
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
     resolucao: p.resolucao ?? "",
   }));
@@ -93,7 +93,7 @@ export async function fetchProcessById(id: string) {
   const { data: processes } = await supabase
     .from("processes")
     .select(`
-      id, status, classificacao, resolucao, created_at, data_ocorrencia,
+      id, status, classificacao, resolucao, created_at, data_da_ocorrencia,
       employees ( nome_completo ),
       misconduct_types ( name )
     `)
@@ -105,8 +105,8 @@ export async function fetchProcessById(id: string) {
     funcionario: p.employees?.nome_completo ?? "",
     tipoDesvio: p.misconduct_types?.name ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
-    dataAbertura: (() => { const d = p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
-    createdAt: (p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia) ?? null,
+    dataAbertura: (() => { const d = p.created_at ?? (p as any).data_da_ocorrencia ?? p.createdAt ?? (p as any).dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
+    createdAt: (p.created_at ?? (p as any).data_da_ocorrencia ?? p.createdAt ?? (p as any).dataOcorrencia) ?? null,
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
     resolucao: p.resolucao ?? "",
   };
