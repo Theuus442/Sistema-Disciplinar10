@@ -98,7 +98,7 @@ export default function UsuariosAdminPage() {
       }
     } catch (e: any) {
       setProfilePermissions(old);
-      toast({ title: 'Erro ao atualizar permissão', description: (e && (e as any).message) || 'Tente novamente' });
+      toast({ title: 'Erro ao atualizar permissão', description: errorMessage(e) || 'Tente novamente' });
     }
   };
 
@@ -120,7 +120,7 @@ export default function UsuariosAdminPage() {
       await Promise.all(permsInGroup.map((perm) => doGrant(perfil, perm)));
     } catch (e: any) {
       setProfilePermissions(before);
-      toast({ title: 'Erro ao aplicar permissões', description: (e && e.message) || 'Verifique a configuração do banco' });
+      toast({ title: 'Erro ao aplicar permissões', description: errorMessage(e) || 'Verifique a configuração do banco' });
     }
   };
   const clearGroup = async (perfil: string, group: string) => {
@@ -132,7 +132,7 @@ export default function UsuariosAdminPage() {
       await Promise.all(permsInGroup.map((perm) => doRevoke(perfil, perm)));
     } catch (e: any) {
       setProfilePermissions(before);
-      toast({ title: 'Erro ao remover permissões', description: (e && e.message) || 'Verifique a configuração do banco' });
+      toast({ title: 'Erro ao remover permissões', description: errorMessage(e) || 'Verifique a configuração do banco' });
     }
   };
 
@@ -154,7 +154,7 @@ export default function UsuariosAdminPage() {
       await fetch('/api/admin/user-permissions', { method: grant ? 'POST' : 'DELETE', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) }, body: JSON.stringify({ userId: id, permission: perm }) });
     } catch (e: any) {
       setUserPermissions(before);
-      toast({ title: 'Erro ao atualizar permissões', description: (e && e.message) || 'Tente novamente' });
+      toast({ title: 'Erro ao atualizar permissões', description: errorMessage(e) || 'Tente novamente' });
     }
   };
   const selectAllUser = async (id: string) => {
@@ -165,7 +165,7 @@ export default function UsuariosAdminPage() {
       await Promise.all(permissions.map((p) => fetch('/api/admin/user-permissions', { method: 'POST', headers, body: JSON.stringify({ userId: id, permission: p }) })));
     } catch (e: any) {
       setUserPermissions(before);
-      toast({ title: 'Erro ao aplicar permissões', description: (e && e.message) || 'Tente novamente' });
+      toast({ title: 'Erro ao aplicar permissões', description: errorMessage(e) || 'Tente novamente' });
     }
   };
   const clearUser = async (id: string) => {
@@ -176,7 +176,7 @@ export default function UsuariosAdminPage() {
       await Promise.all((before[id] || []).map((p) => fetch('/api/admin/user-permissions', { method: 'DELETE', headers, body: JSON.stringify({ userId: id, permission: p }) })));
     } catch (e: any) {
       setUserPermissions(before);
-      toast({ title: 'Erro ao remover permissões', description: (e && e.message) || 'Tente novamente' });
+      toast({ title: 'Erro ao remover permissões', description: errorMessage(e) || 'Tente novamente' });
     }
   };
 
