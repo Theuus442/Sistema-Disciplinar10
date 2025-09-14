@@ -83,7 +83,11 @@ export default function ProcessosPage() {
   );
 
   const tiposDisponiveis = useMemo(() => {
-    const set = new Set(processes.map((p) => p.tipoDesvio));
+    const set = new Set(
+      processes
+        .map((p) => (p.tipoDesvio || "").trim())
+        .filter((t) => t.length > 0)
+    );
     return ["todos", ...Array.from(set)];
   }, [processes]);
 
