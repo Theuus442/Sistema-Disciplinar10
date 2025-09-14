@@ -393,6 +393,11 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
 
 // ------------------------- Permissions management -------------------------
 
+async function tableMissing(err: any) {
+  const msg = (err && (err.message || String(err))) || '';
+  return /relation .* does not exist/i.test(msg) || /42P01/.test(String((err as any)?.code || ''));
+}
+
 export const listPermissions: RequestHandler = async (_req, res) => {
   try {
     const ctx = await ensureAdmin(_req, res);
