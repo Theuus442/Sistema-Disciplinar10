@@ -261,13 +261,8 @@ export default function GestorRegistrarDesvio() {
                       ))
                     ) : (
                       <>
-                        <option>Atraso</option>
-                        <option>Falta Injustificada</option>
-                        <option>Comportamento Inadequado</option>
-                        <option>Uso Indevido de Recursos</option>
-                        <option>Descumprimento de Normas</option>
-                        <option>Quebra de Confidencialidade</option>
-                        <option>Outro</option>
+                        {/* Quando não houver tabela misconduct_types, desabilitar seleção real */}
+                        <option value="" disabled>Lista de tipos indisponível</option>
                       </>
                     )}
                   </select>
