@@ -50,14 +50,29 @@ export default function GestorRegistrarDesvio() {
       setHistoryLoading(true);
       setHistoryError(null);
       try {
-        const { data, error } = await supabase.rpc('get_employee_history', { p_employee_id: funcionarioId }) as any;
+        const { data, error } = (await supabase.rpc('get_employee_history', { p_employee_id: funcionarioId })) as any;
         if (!mounted) return;
         if (error) {
-          console.error('RPC get_employee_history error:', error);
-          setHistoryError(errorMessage(error));
-          setHistory([]);
+          console.error('RPC get_employee_history error:', errorMessage(error));
+          // Fallback: if RPC is missing or fails, read from processes directly
+          try {
+            const { data: rows, error: e2 } = await supabase
+              .from('processes')
+              .select('id, tipo_desvio, classificacao, status, created_at, data_ocorrencia')
+              .eq('employee_id', funcionarioId)
+              .order('created_at', { ascending: false });
+            if (e2) {
+              setHistoryError(errorMessage(e2));
+              setHistory([]);
+            } else {
+              setHistory(Array.isArray(rows) ? rows : rows ? [rows] : []);
+            }
+          } catch (inner) {
+            setHistoryError(errorMessage(inner));
+            setHistory([]);
+          }
         } else {
-          setHistory(Array.isArray(data) ? data : (data ? [data] : []));
+          setHistory(Array.isArray(data) ? data : data ? [data] : []);
         }
       } catch (err: any) {
         console.error('Unexpected error fetching history:', err);
