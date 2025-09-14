@@ -127,7 +127,8 @@ export default function ProcessosPage() {
     navigate("/gestor/registrar");
   };
 
-  const handleSair = () => {
+  const handleSair = async () => {
+    try { await supabase.auth.signOut(); } catch {}
     window.location.href = "/";
   };
 
