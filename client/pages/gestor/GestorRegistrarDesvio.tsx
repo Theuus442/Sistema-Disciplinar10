@@ -116,7 +116,7 @@ export default function GestorRegistrarDesvio() {
         misconduct_type_id: selectedType.id,
         classificacao: classificacao === "Média" ? "Media" : classificacao,
         descricao,
-        data_ocorrencia: dataOcorrencia ? new Date(dataOcorrencia).toISOString() : null,
+        data_da_ocorrencia: dataOcorrencia ? new Date(dataOcorrencia).toISOString() : null,
         status: "Em_Analise",
         criado_por_user_id: userId,
       };
@@ -167,7 +167,7 @@ export default function GestorRegistrarDesvio() {
             </p>
 
             <form onSubmit={enviarFormulario} className="space-y-6 rounded-md border border-sis-border bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
-              {/* Funcionário */}
+              {/* Funcion��rio */}
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="sm:col-span-1">
                   <label className="mb-1 block font-roboto text-sm font-medium text-sis-dark-text">
@@ -222,7 +222,7 @@ export default function GestorRegistrarDesvio() {
                       <tbody>
                         {history.map((h, idx) => (
                           <tr key={`${h.id ?? idx}`} className="border-t">
-                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{formatDate(h.data_ocorrencia ?? h.created_at ?? h.data)}</td>
+                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{formatDate((h as any).data_da_ocorrencia ?? h.created_at ?? h.data)}</td>
                             <td className="py-2 pr-4 font-roboto text-sis-dark-text">{(h as any)?.misconduct_types?.name ?? h.tipo_desvio ?? h.misconduct_type ?? h.tipo ?? '-'}</td>
                             <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.classificacao ?? h.classification ?? '-'}</td>
                             <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.status ?? '-'}</td>
