@@ -161,7 +161,8 @@ export default function UsuariosAdminPage() {
     const before = { ...userPermissions };
     setUserPermissions((prev) => ({ ...prev, [id]: [...permissions] }));
     try {
-      await Promise.all(permissions.map((p) => fetch('/api/admin/user-permissions', { method: 'POST', headers: { 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify({ userId: id, permission: p }) })));
+      const headers = { 'Content-Type': 'application/json', ...(await authHeaders()) } as any;
+      await Promise.all(permissions.map((p) => fetch('/api/admin/user-permissions', { method: 'POST', headers, body: JSON.stringify({ userId: id, permission: p }) })));
     } catch (e: any) {
       setUserPermissions(before);
       toast({ title: 'Erro ao aplicar permissões', description: (e && e.message) || 'Tente novamente' });
