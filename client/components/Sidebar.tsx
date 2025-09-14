@@ -5,6 +5,8 @@ interface SidebarProps {
   onSair?: () => void;
 }
 
+import { supabase } from "@/lib/supabase";
+
 export default function Sidebar({ onSair }: SidebarProps) {
   const [activeItem, setActiveItem] = useState("dashboard");
   const navigate = useNavigate();
@@ -87,6 +89,11 @@ export default function Sidebar({ onSair }: SidebarProps) {
     },
   ];
 
+  const defaultSair = async () => {
+    try { await supabase.auth.signOut(); } catch {}
+    try { navigate("/"); } catch { if (typeof window !== "undefined") window.location.href = "/"; }
+  };
+
   return (
     <div className="flex h-screen w-56 md:w-64 flex-col border-r border-sis-border bg-white">
       <div className="flex flex-1 flex-col p-2">
@@ -125,7 +132,7 @@ export default function Sidebar({ onSair }: SidebarProps) {
         {/* Botão Sair */}
         <div className="p-2">
           <button
-            onClick={onSair}
+            onClick={onSair ?? defaultSair}
             className="flex w-full items-center justify-center space-x-4 rounded-md bg-red-500 px-3 py-2.5 font-roboto text-sm font-medium text-white hover:bg-red-600"
           >
             <svg

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchEmployees } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 export default function FuncionariosListaPage() {
   const navigate = useNavigate();
@@ -46,7 +47,8 @@ export default function FuncionariosListaPage() {
     );
   }, [busca, employees]);
 
-  const handleSair = () => {
+  const handleSair = async () => {
+    try { await supabase.auth.signOut(); } catch {}
     window.location.href = "/";
   };
 

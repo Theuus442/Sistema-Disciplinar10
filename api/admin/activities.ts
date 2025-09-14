@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse){
   const employeeIds = Array.from(new Set(procs.map((p:any)=>p.employee_id).filter(Boolean)));
   const employeesById = new Map<string, any>();
   if (employeeIds.length){ const { data: employees } = await db.from('employees').select('*').in('id', employeeIds as any); for(const e of employees || []) employeesById.set((e as any).id, e); }
-  const procActivities = procs.map((p:any)=>{ const at=p?.created_at||p?.data_ocorrencia||p?.updated_at||p?.createdAt||p?.dataOcorrencia||p?.updatedAt||new Date().toISOString(); const emp=employeesById.get(p.employee_id); const nome=emp?.nome_completo ?? 'Funcionário'; const tipo=p.tipo_desvio ?? 'Processo'; return { id:`process:${p.id}`, descricao:`Abertura de processo (${tipo}) para ${nome}`, at:String(at) }; });
+  const procActivities = procs.map((p:any)=>{ const at=p?.created_at||(p as any)?.data_da_ocorrencia||p?.updated_at||p?.createdAt||(p as any)?.dataOcorrencia||p?.updatedAt||new Date().toISOString(); const emp=employeesById.get(p.employee_id); const nome=emp?.nome_completo ?? 'Funcionário'; const tipo=p.tipo_desvio ?? 'Processo'; return { id:`process:${p.id}`, descricao:`Abertura de processo (${tipo}) para ${nome}`, at:String(at) }; });
   const { data: recentProfiles, error: profilesErr } = await db.from('profiles').select('*').limit(100);
   if (profilesErr) return res.status(400).json({ error: profilesErr.message });
   const userActivities = (recentProfiles || []).map((p:any)=>{ const at=p.ultimo_acesso||p.ultimoAcesso||p.updated_at||p.updatedAt||p.created_at||p.createdAt||new Date().toISOString(); return { id:`user:${p.id}`, descricao:`Cadastro de usuário ${p.nome || p.email || p.id}`, at:String(at) }; });

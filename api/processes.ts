@@ -20,7 +20,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse){
   function normalizeClassificacao(c?: string | null){ if(!c) return 'Leve'; return c==='Media' ? 'Média' : c; }
   function normalizeStatus(s?: string | null){ if(!s) return 'Em Análise' as any; if(s==='Em_Analise') return 'Em Análise' as any; return (s.replace(/_/g,' ') as any); }
 
-  const items = procs.map((p:any)=>{ const emp=employeesById.get(p.employee_id); const funcionario=emp?.nome_completo ?? emp?.matricula ?? ''; const d=p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia; const dataAbertura = d ? new Date(d).toLocaleDateString() : ''; return { id:p.id, funcionario, tipoDesvio: p.tipo_desvio ?? '', classificacao: normalizeClassificacao(p.classificacao), dataAbertura, status: normalizeStatus(p.status) }; });
+  const items = procs.map((p:any)=>{ const emp=employeesById.get(p.employee_id); const funcionario=emp?.nome_completo ?? emp?.matricula ?? ''; const d=p.created_at ?? (p as any).data_da_ocorrencia ?? p.createdAt ?? (p as any).dataOcorrencia; const dataAbertura = d ? new Date(d).toLocaleDateString() : ''; return { id:p.id, funcionario, tipoDesvio: p.tipo_desvio ?? '', classificacao: normalizeClassificacao(p.classificacao), dataAbertura, status: normalizeStatus(p.status) }; });
 
   return res.json(items);
 }

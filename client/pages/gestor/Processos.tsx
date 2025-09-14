@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchProcesses } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
 type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
@@ -83,7 +84,11 @@ export default function ProcessosPage() {
   );
 
   const tiposDisponiveis = useMemo(() => {
-    const set = new Set(processes.map((p) => p.tipoDesvio));
+    const set = new Set(
+      processes
+        .map((p) => (p.tipoDesvio || "").trim())
+        .filter((t) => t.length > 0)
+    );
     return ["todos", ...Array.from(set)];
   }, [processes]);
 
@@ -123,7 +128,8 @@ export default function ProcessosPage() {
     navigate("/gestor/registrar");
   };
 
-  const handleSair = () => {
+  const handleSair = async () => {
+    try { await supabase.auth.signOut(); } catch {}
     window.location.href = "/";
   };
 

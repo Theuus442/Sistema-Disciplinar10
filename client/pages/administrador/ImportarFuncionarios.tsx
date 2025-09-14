@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { errorMessage } from '@/lib/utils';
 
 export default function ImportarFuncionariosPage() {
   const { toast } = useToast();
@@ -39,7 +40,7 @@ export default function ImportarFuncionariosPage() {
       setStatus(`Importação concluída! Funcionários inseridos: ${body.inserted}. Atualizados: ${body.updated}. Erros: ${body.errors}`);
     } catch (e: any) {
       console.error(e);
-      setStatus('Erro ao processar importação: ' + (e?.message || String(e)));
+      setStatus('Erro ao processar importação: ' + errorMessage(e));
     }
   };
 

@@ -50,14 +50,29 @@ export default function GestorRegistrarDesvio() {
       setHistoryLoading(true);
       setHistoryError(null);
       try {
-        const { data, error } = await supabase.rpc('get_employee_history', { p_employee_id: funcionarioId }) as any;
+        const { data, error } = (await supabase.rpc('get_employee_history', { p_employee_id: funcionarioId })) as any;
         if (!mounted) return;
         if (error) {
-          console.error('RPC get_employee_history error:', error);
-          setHistoryError(error?.message || String(error));
-          setHistory([]);
+          console.error('RPC get_employee_history error:', errorMessage(error));
+          // Fallback: if RPC is missing or fails, read from processes directly
+          try {
+            const { data: rows, error: e2 } = await supabase
+              .from('processes')
+              .select('*, misconduct_types(name)')
+              .eq('employee_id', funcionarioId)
+              .order('created_at', { ascending: false });
+            if (e2) {
+              setHistoryError(errorMessage(e2));
+              setHistory([]);
+            } else {
+              setHistory(Array.isArray(rows) ? rows : rows ? [rows] : []);
+            }
+          } catch (inner) {
+            setHistoryError(errorMessage(inner));
+            setHistory([]);
+          }
         } else {
-          setHistory(Array.isArray(data) ? data : (data ? [data] : []));
+          setHistory(Array.isArray(data) ? data : data ? [data] : []);
         }
       } catch (err: any) {
         console.error('Unexpected error fetching history:', err);
@@ -88,14 +103,20 @@ export default function GestorRegistrarDesvio() {
         return;
       }
 
+      const selectedType = misconductTypes.find((t) => t.id === tipoDesvio || t.name === tipoDesvio);
+      if (!selectedType?.id) {
+        toast.error("Selecione um Tipo de Desvio válido.");
+        return;
+      }
+
       const genId = () => (typeof crypto !== "undefined" && (crypto as any).randomUUID ? (crypto as any).randomUUID() : ([1e7] as any + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c: any) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
       const payload: any = {
         id: genId(),
         employee_id: funcionarioId,
-        tipo_desvio: tipoDesvio,
-        misconduct_type_id: misconductTypes.find((t) => t.id === tipoDesvio || t.name === tipoDesvio)?.id ?? null,
+        misconduct_type_id: selectedType.id,
         classificacao: classificacao === "Média" ? "Media" : classificacao,
         descricao,
+        data_da_ocorrencia: dataOcorrencia ? new Date(dataOcorrencia).toISOString() : null,
         status: "Em_Analise",
         criado_por_user_id: userId,
       };
@@ -146,7 +167,7 @@ export default function GestorRegistrarDesvio() {
             </p>
 
             <form onSubmit={enviarFormulario} className="space-y-6 rounded-md border border-sis-border bg-white p-6 shadow-[0_0_2px_0_rgba(23,26,31,0.12),0_0_1px_0_rgba(23,26,31,0.07)]">
-              {/* Funcionário */}
+              {/* Funcion��rio */}
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="sm:col-span-1">
                   <label className="mb-1 block font-roboto text-sm font-medium text-sis-dark-text">
@@ -201,8 +222,8 @@ export default function GestorRegistrarDesvio() {
                       <tbody>
                         {history.map((h, idx) => (
                           <tr key={`${h.id ?? idx}`} className="border-t">
-                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{formatDate(h.data_ocorrencia ?? h.created_at ?? h.data)}</td>
-                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.tipo_desvio ?? h.misconduct_type ?? h.tipo ?? '-'}</td>
+                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{formatDate((h as any).data_da_ocorrencia ?? h.created_at ?? h.data)}</td>
+                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{(h as any)?.misconduct_types?.name ?? h.tipo_desvio ?? h.misconduct_type ?? h.tipo ?? '-'}</td>
                             <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.classificacao ?? h.classification ?? '-'}</td>
                             <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.status ?? '-'}</td>
                           </tr>
@@ -240,13 +261,8 @@ export default function GestorRegistrarDesvio() {
                       ))
                     ) : (
                       <>
-                        <option>Atraso</option>
-                        <option>Falta Injustificada</option>
-                        <option>Comportamento Inadequado</option>
-                        <option>Uso Indevido de Recursos</option>
-                        <option>Descumprimento de Normas</option>
-                        <option>Quebra de Confidencialidade</option>
-                        <option>Outro</option>
+                        {/* Quando não houver tabela misconduct_types, desabilitar seleção real */}
+                        <option value="" disabled>Lista de tipos indisponível</option>
                       </>
                     )}
                   </select>
