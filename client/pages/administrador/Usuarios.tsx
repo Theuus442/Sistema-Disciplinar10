@@ -35,6 +35,9 @@ export default function UsuariosAdminPage() {
   // Permissions management
   const [permissions, setPermissions] = useState<string[]>([]);
   const [profilePermissions, setProfilePermissions] = useState<Record<string, string[]>>({});
+  const [userPermissions, setUserPermissions] = useState<Record<string, string[]>>({});
+  const [abrirPermissoes, setAbrirPermissoes] = useState(false);
+  const [usuarioAlvoPerm, setUsuarioAlvoPerm] = useState<Usuario | null>(null);
 
   // Map technical permission codes to friendly labels and groups
   const PERMISSION_META: Record<string, { label: string; group: string }> = {
@@ -66,6 +69,15 @@ export default function UsuariosAdminPage() {
       if (!res.ok) return;
       const map = await res.json();
       setProfilePermissions(map || {});
+    } catch (e) {}
+  };
+
+  const loadUserPermissions = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/admin/user-permissions/${userId}`, { headers: await authHeaders() });
+      if (!res.ok) return;
+      const list = await res.json();
+      setUserPermissions((prev) => ({ ...prev, [userId]: Array.isArray(list) ? list : [] }));
     } catch (e) {}
   };
 
@@ -130,26 +142,42 @@ export default function UsuariosAdminPage() {
   const totalCountInGroup = (group: string) => permissions.filter((p) => permGroup(p) === group).length;
   const selectedCountPerfil = (perfil: string) => (profilePermissions[perfil] || []).length;
   const totalCountPerfil = permissions.length;
-  const selectAllPerfil = async (perfil: string) => {
-    const before = { ...profilePermissions };
-    setProfilePermissions((prev) => ({ ...prev, [perfil]: [...permissions] }));
+
+  // User permission helpers
+  const userHas = (id: string, perm: string) => (userPermissions[id] || []).includes(perm);
+  const toggleUserPermission = async (id: string, perm: string, grant: boolean) => {
+    const before = { ...userPermissions };
+    const cur = new Set([...(before[id] || [])]);
+    if (grant) cur.add(perm); else cur.delete(perm);
+    setUserPermissions((prev) => ({ ...prev, [id]: Array.from(cur) }));
     try {
-      await Promise.all(permissions.map((p) => doGrant(perfil, p)));
+      await fetch('/api/admin/user-permissions', { method: grant ? 'POST' : 'DELETE', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) }, body: JSON.stringify({ userId: id, permission: perm }) });
     } catch (e: any) {
-      setProfilePermissions(before);
-      toast({ title: 'Erro ao aplicar permissões', description: (e && e.message) || 'Verifique a configuração do banco' });
+      setUserPermissions(before);
+      toast({ title: 'Erro ao atualizar permissões', description: (e && e.message) || 'Tente novamente' });
     }
   };
-  const clearPerfil = async (perfil: string) => {
-    const before = { ...profilePermissions };
-    setProfilePermissions((prev) => ({ ...prev, [perfil]: [] }));
+  const selectAllUser = async (id: string) => {
+    const before = { ...userPermissions };
+    setUserPermissions((prev) => ({ ...prev, [id]: [...permissions] }));
     try {
-      await Promise.all(permissions.map((p) => doRevoke(perfil, p)));
+      await Promise.all(permissions.map((p) => fetch('/api/admin/user-permissions', { method: 'POST', headers: { 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify({ userId: id, permission: p }) })));
     } catch (e: any) {
-      setProfilePermissions(before);
-      toast({ title: 'Erro ao remover permissões', description: (e && e.message) || 'Verifique a configuração do banco' });
+      setUserPermissions(before);
+      toast({ title: 'Erro ao aplicar permissões', description: (e && e.message) || 'Tente novamente' });
     }
   };
+  const clearUser = async (id: string) => {
+    const before = { ...userPermissions };
+    setUserPermissions((prev) => ({ ...prev, [id]: [] }));
+    try {
+      await Promise.all((before[id] || []).map((p) => fetch('/api/admin/user-permissions', { method: 'DELETE', headers: { 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify({ userId: id, permission: p }) })));
+    } catch (e: any) {
+      setUserPermissions(before);
+      toast({ title: 'Erro ao remover permissões', description: (e && e.message) || 'Tente novamente' });
+    }
+  };
+
   const groupIcon = (g: string) => {
     if (g === 'Processos') return <ListChecks className="h-4 w-4 text-sis-blue" />;
     if (g === 'Relatórios') return <FileText className="h-4 w-4 text-sis-blue" />;
@@ -405,8 +433,9 @@ export default function UsuariosAdminPage() {
                           <Switch checked={u.ativo} onCheckedChange={(v) => alternarAtivo(u.id, v)} />
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => abrirModalEdicao(u)}>Editar</Button>
+                        <Button variant="secondary" size="sm" onClick={() => { setUsuarioAlvoPerm(u); setAbrirPermissoes(true); loadUserPermissions(u.id); }}>Permissões</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -419,59 +448,46 @@ export default function UsuariosAdminPage() {
               </Table>
             </div>
 
-            {/* Permissões por Perfil */}
-            <Card className="border-sis-border bg-white">
-              <CardHeader>
-                <CardTitle className="text-lg">Permissões por Perfil</CardTitle>
-                <p className="mt-1 text-sm text-sis-secondary-text">Defina o acesso por perfil. Você pode selecionar tudo ou limpar rapidamente.</p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  {['administrador','gestor','juridico','funcionario'].map((perfil) => (
-                    <div key={perfil} className="rounded-md border border-sis-border">
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-sis-border/70 bg-sis-bg-light/60">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex h-7 items-center rounded bg-sis-blue/10 px-2 text-sm font-semibold text-sis-blue ring-1 ring-inset ring-sis-blue/20 capitalize">{perfil}</span>
-                          <span className="text-xs md:text-sm text-sis-secondary-text">{selectedCountPerfil(perfil)} de {totalCountPerfil}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => selectAllPerfil(perfil)}>Selecionar tudo</Button>
-                          <Button variant="ghost" size="sm" onClick={() => clearPerfil(perfil)}>Limpar</Button>
-                        </div>
-                      </div>
-                      <div className="p-4 space-y-4">
-                        {groups.map((g) => (
-                          <div key={g} className="rounded border border-sis-border/70">
-                            <div className="flex items-center justify-between px-3 py-2 bg-sis-bg-light/60">
-                              <div className="flex items-center gap-2 text-sm font-medium">
-                                {groupIcon(g)}
-                                {g}
-                                <span className="ml-1 text-xs text-sis-secondary-text">{selectedCountInGroup(perfil, g)} de {totalCountInGroup(g)}</span>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => selectAllInGroup(perfil, g)}>Selecionar todos</Button>
-                                <Button variant="outline" size="sm" onClick={() => clearGroup(perfil, g)}>Limpar</Button>
-                              </div>
-                            </div>
-                            <div className="divide-y">
-                              {permissions.filter((p) => permGroup(p) === g).map((perm) => (
-                                <label key={perm} className="grid grid-cols-[auto,1fr] items-center gap-3 px-3 py-2">
-                                  <Checkbox checked={!!(profilePermissions[perfil]?.includes(perm))} onCheckedChange={(v) => togglePermission(perfil, perm, Boolean(v))} />
-                                  <div className="text-sm leading-5">
-                                    {permLabel(perm)}
-                                    
-                                  </div>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+            {/* Permissões por Usuário - Modal */}
+            <Dialog open={abrirPermissoes} onOpenChange={setAbrirPermissoes}>
+              <DialogContent className="sm:max-w-[680px] max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{usuarioAlvoPerm ? `Permissões de ${usuarioAlvoPerm.nome}` : 'Permissões do Usuário'}</DialogTitle>
+                </DialogHeader>
+                {usuarioAlvoPerm && (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm text-sis-secondary-text">Selecione as permissões específicas deste usuário.</div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => selectAllUser(usuarioAlvoPerm.id)}>Selecionar tudo</Button>
+                        <Button variant="outline" size="sm" onClick={() => clearUser(usuarioAlvoPerm.id)}>Limpar</Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="space-y-4">
+                      {groups.map((g) => (
+                        <div key={g} className="rounded border border-sis-border/70">
+                          <div className="flex items-center gap-2 px-3 py-2 bg-sis-bg-light/60 text-sm font-medium">
+                            {groupIcon(g)}
+                            {g}
+                          </div>
+                          <div className="divide-y">
+                            {permissions.filter((p) => permGroup(p) === g).map((perm) => (
+                              <label key={perm} className="grid grid-cols-[auto,1fr] items-center gap-3 px-3 py-2">
+                                <Checkbox checked={userHas(usuarioAlvoPerm.id, perm)} onCheckedChange={(v) => toggleUserPermission(usuarioAlvoPerm.id, perm, Boolean(v))} />
+                                <div className="text-sm leading-5">{permLabel(perm)}</div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setAbrirPermissoes(false)}>Fechar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Modal de Edição */}
             <Dialog open={abrirEditar} onOpenChange={setAbrirEditar}>
