@@ -354,8 +354,8 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     const procActivities = procs
       .map((p: any) => {
         const at =
-          p?.created_at || p?.data_ocorrencia || p?.updated_at ||
-          p?.createdAt || p?.dataOcorrencia || p?.updatedAt || new Date().toISOString();
+          p?.created_at || (p as any)?.data_da_ocorrencia || p?.updated_at ||
+          p?.createdAt || (p as any)?.dataOcorrencia || p?.updatedAt || new Date().toISOString();
         const emp = employeesById.get(p.employee_id);
         const nome = emp?.nome_completo ?? "Funcionário";
         const tipo = p.tipo_desvio ?? "Processo";
