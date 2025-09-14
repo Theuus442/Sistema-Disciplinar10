@@ -91,18 +91,36 @@ export default function UsuariosAdminPage() {
   };
 
   // Bulk toggle helpers
+  const doGrant = async (perfil: string, permission: string) => {
+    await fetch('/api/admin/profile-permissions', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) }, body: JSON.stringify({ perfil, permission }) });
+  };
+  const doRevoke = async (perfil: string, permission: string) => {
+    await fetch('/api/admin/profile-permissions', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) }, body: JSON.stringify({ perfil, permission }) });
+  };
+
   const selectAllInGroup = async (perfil: string, group: string) => {
     const permsInGroup = permissions.filter((p) => permGroup(p) === group);
-    for (const perm of permsInGroup) {
-      const has = !!(profilePermissions[perfil]?.includes(perm));
-      if (!has) await togglePermission(perfil, perm, true);
+    const before = { ...profilePermissions };
+    const next = new Set([...(before[perfil] || [])]);
+    for (const perm of permsInGroup) next.add(perm);
+    setProfilePermissions((prev) => ({ ...prev, [perfil]: Array.from(next) }));
+    try {
+      await Promise.all(permsInGroup.map((perm) => doGrant(perfil, perm)));
+    } catch (e: any) {
+      setProfilePermissions(before);
+      toast({ title: 'Erro ao aplicar permissões', description: (e && e.message) || 'Verifique a configuração do banco' });
     }
   };
   const clearGroup = async (perfil: string, group: string) => {
     const permsInGroup = permissions.filter((p) => permGroup(p) === group);
-    for (const perm of permsInGroup) {
-      const has = !!(profilePermissions[perfil]?.includes(perm));
-      if (has) await togglePermission(perfil, perm, false);
+    const before = { ...profilePermissions };
+    const next = (before[perfil] || []).filter((p) => permGroup(p) !== group);
+    setProfilePermissions((prev) => ({ ...prev, [perfil]: next }));
+    try {
+      await Promise.all(permsInGroup.map((perm) => doRevoke(perfil, perm)));
+    } catch (e: any) {
+      setProfilePermissions(before);
+      toast({ title: 'Erro ao remover permissões', description: (e && e.message) || 'Verifique a configuração do banco' });
     }
   };
 
@@ -113,10 +131,24 @@ export default function UsuariosAdminPage() {
   const selectedCountPerfil = (perfil: string) => (profilePermissions[perfil] || []).length;
   const totalCountPerfil = permissions.length;
   const selectAllPerfil = async (perfil: string) => {
-    for (const p of permissions) if (!(profilePermissions[perfil] || []).includes(p)) await togglePermission(perfil, p, true);
+    const before = { ...profilePermissions };
+    setProfilePermissions((prev) => ({ ...prev, [perfil]: [...permissions] }));
+    try {
+      await Promise.all(permissions.map((p) => doGrant(perfil, p)));
+    } catch (e: any) {
+      setProfilePermissions(before);
+      toast({ title: 'Erro ao aplicar permissões', description: (e && e.message) || 'Verifique a configuração do banco' });
+    }
   };
   const clearPerfil = async (perfil: string) => {
-    for (const p of permissions) if ((profilePermissions[perfil] || []).includes(p)) await togglePermission(perfil, p, false);
+    const before = { ...profilePermissions };
+    setProfilePermissions((prev) => ({ ...prev, [perfil]: [] }));
+    try {
+      await Promise.all(permissions.map((p) => doRevoke(perfil, p)));
+    } catch (e: any) {
+      setProfilePermissions(before);
+      toast({ title: 'Erro ao remover permissões', description: (e && e.message) || 'Verifique a configuração do banco' });
+    }
   };
   const groupIcon = (g: string) => {
     if (g === 'Processos') return <ListChecks className="h-4 w-4 text-sis-blue" />;
@@ -399,8 +431,8 @@ export default function UsuariosAdminPage() {
                     <div key={perfil} className="rounded-md border border-sis-border">
                       <div className="flex items-center justify-between px-4 py-3 border-b border-sis-border/70 bg-sis-bg-light/60">
                         <div className="flex items-center gap-2">
-                          <span className="inline-flex h-6 items-center rounded bg-sis-blue/10 px-2 text-xs font-medium text-sis-blue ring-1 ring-inset ring-sis-blue/20 capitalize">{perfil}</span>
-                          <span className="text-xs text-sis-secondary-text">{selectedCountPerfil(perfil)} de {totalCountPerfil}</span>
+                          <span className="inline-flex h-7 items-center rounded bg-sis-blue/10 px-2 text-sm font-semibold text-sis-blue ring-1 ring-inset ring-sis-blue/20 capitalize">{perfil}</span>
+                          <span className="text-xs md:text-sm text-sis-secondary-text">{selectedCountPerfil(perfil)} de {totalCountPerfil}</span>
                         </div>
                         <div className="flex gap-2">
                           <Button variant="ghost" size="sm" onClick={() => selectAllPerfil(perfil)}>Selecionar tudo</Button>
