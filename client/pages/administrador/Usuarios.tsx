@@ -35,6 +35,21 @@ export default function UsuariosAdminPage() {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [profilePermissions, setProfilePermissions] = useState<Record<string, string[]>>({});
 
+  // Map technical permission codes to friendly labels and groups
+  const PERMISSION_META: Record<string, { label: string; group: string }> = {
+    'process:criar': { label: 'Criar processos', group: 'Processos' },
+    'process:ver': { label: 'Ver processos', group: 'Processos' },
+    'process:finalizar': { label: 'Finalizar processos', group: 'Processos' },
+    'relatorios:ver': { label: 'Ver relatórios', group: 'Relatórios' },
+    'usuarios:gerenciar': { label: 'Gerenciar usuários', group: 'Usuários' },
+  };
+  function permLabel(perm: string) {
+    return (PERMISSION_META[perm]?.label) || perm.replace(/:/g, ' - ');
+  }
+  function permGroup(perm: string) {
+    return (PERMISSION_META[perm]?.group) || 'Outros';
+  }
+
   const loadPermissions = async () => {
     try {
       const res = await fetch('/api/admin/permissions', { headers: await authHeaders() });
