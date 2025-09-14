@@ -1,5 +1,5 @@
 import serverless from "serverless-http";
-import { createServer } from "../dist/server/server.mjs";
+import { createServer } from "../server/index";
 
 const app = createServer();
 const serverlessHandler = serverless(app as any);
