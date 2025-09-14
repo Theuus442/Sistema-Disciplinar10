@@ -27,7 +27,12 @@ export async function fetchEmployees() {
   const { data: employees, error: empErr } = await supabase.from("employees").select("*");
   if (empErr) throw empErr;
 
-  const { data: processes } = await supabase.from("processes").select("*");
+  const { data: processes } = await supabase
+    .from("processes")
+    .select(`
+      id, employee_id, classificacao, resolucao, status, created_at, data_ocorrencia,
+      misconduct_types ( name )
+    `);
   const { data: profiles } = await supabase.from("profiles").select("*");
 
   const profilesMap = new Map<string, any>();
@@ -45,7 +50,7 @@ export async function fetchEmployees() {
         .map((pr) => ({
           id: pr.id,
           dataOcorrencia: (() => { const d = pr.created_at ?? pr.data_ocorrencia ?? pr.createdAt ?? pr.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
-          tipoDesvio: pr.tipo_desvio ?? "",
+          tipoDesvio: (pr as any)?.misconduct_types?.name ?? "",
           classificacao: pr.classificacao ? (pr.classificacao === "Media" ? "Média" : pr.classificacao) : ("Leve" as any),
           medidaAplicada: pr.resolucao ?? pr.descricao ?? "",
           status: pr.status ? (pr.status.replace(/_/g, " ") as any) : ("Em Análise" as any),
@@ -65,31 +70,40 @@ export async function fetchEmployeeById(matriculaOrId: string) {
 
 export async function fetchProcesses() {
   // Read directly from Supabase to avoid serverless 500s
-  const { data: processes } = await supabase.from("processes").select("*");
-  const { data: employees } = await supabase.from("employees").select("*");
-  const empMap = new Map<string, string>();
-  (employees || []).forEach((e) => empMap.set(e.id, e.nome_completo ?? e.matricula ?? ""));
-  return (processes || []).map((p) => ({
+  const { data: processes } = await supabase
+    .from("processes")
+    .select(`
+      id, status, classificacao, resolucao, created_at, data_ocorrencia,
+      employees ( nome_completo ),
+      misconduct_types ( name )
+    `);
+  return (processes || []).map((p: any) => ({
     id: p.id,
-    funcionario: empMap.get(p.employee_id) ?? "",
-    tipoDesvio: p.tipo_desvio ?? "",
+    funcionario: p.employees?.nome_completo ?? "",
+    tipoDesvio: p.misconduct_types?.name ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
-    dataAbertura: (() => { const d = p.created_at ?? p.data_ocorrencia ?? (p as any).createdAt ?? (p as any).dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
-    createdAt: (p.created_at ?? (p as any).data_ocorrencia ?? (p as any).createdAt ?? (p as any).dataOcorrencia) ?? null,
+    dataAbertura: (() => { const d = p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
+    createdAt: (p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia) ?? null,
     status: p.status ? p.status.replace(/_/g, " ") : ("Em Análise" as any),
     resolucao: p.resolucao ?? "",
   }));
 }
 
 export async function fetchProcessById(id: string) {
-  const { data: processes } = await supabase.from("processes").select("*").eq("id", id);
+  const { data: processes } = await supabase
+    .from("processes")
+    .select(`
+      id, status, classificacao, resolucao, created_at, data_ocorrencia,
+      employees ( nome_completo ),
+      misconduct_types ( name )
+    `)
+    .eq("id", id);
   if (!processes || processes.length === 0) return undefined;
-  const p = processes[0];
-  const { data: employee } = await supabase.from("employees").select("*").eq("id", p.employee_id).limit(1).single();
+  const p: any = processes[0];
   return {
     id: p.id,
-    funcionario: employee?.nome_completo ?? "",
-    tipoDesvio: p.tipo_desvio ?? "",
+    funcionario: p.employees?.nome_completo ?? "",
+    tipoDesvio: p.misconduct_types?.name ?? "",
     classificacao: p.classificacao ? (p.classificacao === "Media" ? "Média" : p.classificacao) : ("Leve" as any),
     dataAbertura: (() => { const d = p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia; return d ? new Date(d).toLocaleDateString() : ""; })(),
     createdAt: (p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia) ?? null,
