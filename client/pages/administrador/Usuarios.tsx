@@ -374,21 +374,40 @@ export default function UsuariosAdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  {['administrador','gestor','juridico','funcionario'].map((perfil) => (
-                    <div key={perfil} className="rounded-md border border-sis-border p-4">
-                      <h3 className="font-medium capitalize mb-2">{perfil}</h3>
-                      <div className="space-y-2">
-                        {permissions.map((perm) => (
-                          <div key={perm} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Checkbox checked={!!(profilePermissions[perfil] && profilePermissions[perfil].includes(perm))} onCheckedChange={(v) => togglePermission(perfil, perm, Boolean(v))} />
-                              <div className="text-sm">{perm}</div>
+                  {['administrador','gestor','juridico','funcionario'].map((perfil) => {
+                    const groups = Array.from(new Set(permissions.map(permGroup)));
+                    return (
+                      <div key={perfil} className="rounded-md border border-sis-border p-4">
+                        <h3 className="font-medium capitalize mb-3">{perfil}</h3>
+                        <div className="space-y-4">
+                          {groups.map((g) => (
+                            <div key={g} className="rounded border border-sis-border/70">
+                              <div className="flex items-center justify-between px-3 py-2 bg-sis-bg-light/60">
+                                <div className="text-sm font-medium">{g}</div>
+                                <div className="flex gap-2">
+                                  <Button variant="outline" size="xs" onClick={() => selectAllInGroup(perfil, g)}>Selecionar todos</Button>
+                                  <Button variant="outline" size="xs" onClick={() => clearGroup(perfil, g)}>Limpar</Button>
+                                </div>
+                              </div>
+                              <div className="divide-y">
+                                {permissions.filter((p) => permGroup(p) === g).map((perm) => (
+                                  <label key={perm} className="flex items-center justify-between px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox checked={!!(profilePermissions[perfil]?.includes(perm))} onCheckedChange={(v) => togglePermission(perfil, perm, Boolean(v))} />
+                                      <div className="text-sm">
+                                        {permLabel(perm)}
+                                        <span className="ml-2 text-xs text-sis-secondary-text">({perm})</span>
+                                      </div>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
