@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Sidebar from "@/components/Sidebar";
+import { supabase } from "@/lib/supabase";
 import MetricCard from "@/components/MetricCard";
 import TabelaProcessos from "@/components/TabelaProcessos";
 import { fetchProcesses } from "@/lib/api";
@@ -21,7 +22,8 @@ export default function GestorDashboard() {
     navigate("/gestor/registrar");
   };
 
-  const handleSair = () => {
+  const handleSair = async () => {
+    try { await supabase.auth.signOut(); } catch {}
     window.location.href = "/";
   };
 
