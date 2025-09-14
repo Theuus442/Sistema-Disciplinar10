@@ -58,7 +58,7 @@ export default function GestorRegistrarDesvio() {
           try {
             const { data: rows, error: e2 } = await supabase
               .from('processes')
-              .select('*')
+              .select('*, misconduct_types(name)')
               .eq('employee_id', funcionarioId)
               .order('created_at', { ascending: false });
             if (e2) {
@@ -223,7 +223,7 @@ export default function GestorRegistrarDesvio() {
                         {history.map((h, idx) => (
                           <tr key={`${h.id ?? idx}`} className="border-t">
                             <td className="py-2 pr-4 font-roboto text-sis-dark-text">{formatDate(h.data_ocorrencia ?? h.created_at ?? h.data)}</td>
-                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.tipo_desvio ?? h.misconduct_type ?? h.tipo ?? '-'}</td>
+                            <td className="py-2 pr-4 font-roboto text-sis-dark-text">{(h as any)?.misconduct_types?.name ?? h.tipo_desvio ?? h.misconduct_type ?? h.tipo ?? '-'}</td>
                             <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.classificacao ?? h.classification ?? '-'}</td>
                             <td className="py-2 pr-4 font-roboto text-sis-dark-text">{h.status ?? '-'}</td>
                           </tr>
