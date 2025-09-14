@@ -89,6 +89,22 @@ export default function UsuariosAdminPage() {
     }
   };
 
+  // Bulk toggle helpers
+  const selectAllInGroup = async (perfil: string, group: string) => {
+    const permsInGroup = permissions.filter((p) => permGroup(p) === group);
+    for (const perm of permsInGroup) {
+      const has = !!(profilePermissions[perfil]?.includes(perm));
+      if (!has) await togglePermission(perfil, perm, true);
+    }
+  };
+  const clearGroup = async (perfil: string, group: string) => {
+    const permsInGroup = permissions.filter((p) => permGroup(p) === group);
+    for (const perm of permsInGroup) {
+      const has = !!(profilePermissions[perfil]?.includes(perm));
+      if (has) await togglePermission(perfil, perm, false);
+    }
+  };
+
   const carregarUsuarios = async () => {
     const res = await fetch("/api/admin/users", { headers: await authHeaders() });
     if (!res.ok) {
