@@ -31,6 +31,10 @@ export function createServer() {
   app.get("/api/admin/profile-permissions", getProfilePermissions as any);
   app.post("/api/admin/profile-permissions", addProfilePermission as any);
   app.delete("/api/admin/profile-permissions", removeProfilePermission as any);
+  // Per-user permissions
+  app.get("/api/admin/user-permissions/:userId", (require('./routes/admin') as any).getUserPermissions);
+  app.post("/api/admin/user-permissions", (require('./routes/admin') as any).addUserPermission);
+  app.delete("/api/admin/user-permissions", (require('./routes/admin') as any).removeUserPermission);
 
   // Import employees (CSV)
   app.post("/api/admin/import-employees", importEmployees as any);
