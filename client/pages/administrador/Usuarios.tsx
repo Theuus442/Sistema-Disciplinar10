@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updateProfile, type PerfilUsuario, authHeaders } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { errorMessage } from "@/lib/utils";
+import { ListChecks, FileText, Users as UsersIcon } from "lucide-react";
 
 export default function UsuariosAdminPage() {
   const navigate = useNavigate();
@@ -103,6 +104,25 @@ export default function UsuariosAdminPage() {
       const has = !!(profilePermissions[perfil]?.includes(perm));
       if (has) await togglePermission(perfil, perm, false);
     }
+  };
+
+  const groups = useMemo(() => Array.from(new Set(permissions.map(permGroup))), [permissions]);
+  const selectedCountInGroup = (perfil: string, group: string) =>
+    permissions.filter((p) => permGroup(p) === group && (profilePermissions[perfil] || []).includes(p)).length;
+  const totalCountInGroup = (group: string) => permissions.filter((p) => permGroup(p) === group).length;
+  const selectedCountPerfil = (perfil: string) => (profilePermissions[perfil] || []).length;
+  const totalCountPerfil = permissions.length;
+  const selectAllPerfil = async (perfil: string) => {
+    for (const p of permissions) if (!(profilePermissions[perfil] || []).includes(p)) await togglePermission(perfil, p, true);
+  };
+  const clearPerfil = async (perfil: string) => {
+    for (const p of permissions) if ((profilePermissions[perfil] || []).includes(p)) await togglePermission(perfil, p, false);
+  };
+  const groupIcon = (g: string) => {
+    if (g === 'Processos') return <ListChecks className="h-4 w-4 text-sis-blue" />;
+    if (g === 'Relatórios') return <FileText className="h-4 w-4 text-sis-blue" />;
+    if (g === 'Usuários') return <UsersIcon className="h-4 w-4 text-sis-blue" />;
+    return null;
   };
 
   const carregarUsuarios = async () => {
@@ -371,43 +391,52 @@ export default function UsuariosAdminPage() {
             <Card className="border-sis-border bg-white">
               <CardHeader>
                 <CardTitle className="text-lg">Permissões por Perfil</CardTitle>
+                <p className="mt-1 text-sm text-sis-secondary-text">Defina o acesso por perfil. Você pode selecionar tudo ou limpar rapidamente.</p>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  {['administrador','gestor','juridico','funcionario'].map((perfil) => {
-                    const groups = Array.from(new Set(permissions.map(permGroup)));
-                    return (
-                      <div key={perfil} className="rounded-md border border-sis-border p-4">
-                        <h3 className="font-medium capitalize mb-3">{perfil}</h3>
-                        <div className="space-y-4">
-                          {groups.map((g) => (
-                            <div key={g} className="rounded border border-sis-border/70">
-                              <div className="flex items-center justify-between px-3 py-2 bg-sis-bg-light/60">
-                                <div className="text-sm font-medium">{g}</div>
-                                <div className="flex gap-2">
-                                  <Button variant="outline" size="xs" onClick={() => selectAllInGroup(perfil, g)}>Selecionar todos</Button>
-                                  <Button variant="outline" size="xs" onClick={() => clearGroup(perfil, g)}>Limpar</Button>
-                                </div>
-                              </div>
-                              <div className="divide-y">
-                                {permissions.filter((p) => permGroup(p) === g).map((perm) => (
-                                  <label key={perm} className="flex items-center justify-between px-3 py-2">
-                                    <div className="flex items-center gap-2">
-                                      <Checkbox checked={!!(profilePermissions[perfil]?.includes(perm))} onCheckedChange={(v) => togglePermission(perfil, perm, Boolean(v))} />
-                                      <div className="text-sm">
-                                        {permLabel(perm)}
-                                        <span className="ml-2 text-xs text-sis-secondary-text">({perm})</span>
-                                      </div>
-                                    </div>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
+                  {['administrador','gestor','juridico','funcionario'].map((perfil) => (
+                    <div key={perfil} className="rounded-md border border-sis-border">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-sis-border/70 bg-sis-bg-light/60">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-6 items-center rounded bg-sis-blue/10 px-2 text-xs font-medium text-sis-blue ring-1 ring-inset ring-sis-blue/20 capitalize">{perfil}</span>
+                          <span className="text-xs text-sis-secondary-text">{selectedCountPerfil(perfil)} de {totalCountPerfil}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => selectAllPerfil(perfil)}>Selecionar tudo</Button>
+                          <Button variant="ghost" size="sm" onClick={() => clearPerfil(perfil)}>Limpar</Button>
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="p-4 space-y-4">
+                        {groups.map((g) => (
+                          <div key={g} className="rounded border border-sis-border/70">
+                            <div className="flex items-center justify-between px-3 py-2 bg-sis-bg-light/60">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                {groupIcon(g)}
+                                {g}
+                                <span className="ml-1 text-xs text-sis-secondary-text">{selectedCountInGroup(perfil, g)} de {totalCountInGroup(g)}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => selectAllInGroup(perfil, g)}>Selecionar todos</Button>
+                                <Button variant="outline" size="sm" onClick={() => clearGroup(perfil, g)}>Limpar</Button>
+                              </div>
+                            </div>
+                            <div className="divide-y">
+                              {permissions.filter((p) => permGroup(p) === g).map((perm) => (
+                                <label key={perm} className="grid grid-cols-[auto,1fr] items-center gap-3 px-3 py-2">
+                                  <Checkbox checked={!!(profilePermissions[perfil]?.includes(perm))} onCheckedChange={(v) => togglePermission(perfil, perm, Boolean(v))} />
+                                  <div className="text-sm leading-5">
+                                    {permLabel(perm)}
+                                    <span className="ml-2 text-xs text-sis-secondary-text">({perm})</span>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
