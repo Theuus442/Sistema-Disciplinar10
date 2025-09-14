@@ -54,7 +54,7 @@ export default function GestorRegistrarDesvio() {
         if (!mounted) return;
         if (error) {
           console.error('RPC get_employee_history error:', error);
-          setHistoryError(error?.message || String(error));
+          setHistoryError(errorMessage(error));
           setHistory([]);
         } else {
           setHistory(Array.isArray(data) ? data : (data ? [data] : []));
