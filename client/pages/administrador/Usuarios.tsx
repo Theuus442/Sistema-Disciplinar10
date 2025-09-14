@@ -172,7 +172,8 @@ export default function UsuariosAdminPage() {
     const before = { ...userPermissions };
     setUserPermissions((prev) => ({ ...prev, [id]: [] }));
     try {
-      await Promise.all((before[id] || []).map((p) => fetch('/api/admin/user-permissions', { method: 'DELETE', headers: { 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify({ userId: id, permission: p }) })));
+      const headers = { 'Content-Type': 'application/json', ...(await authHeaders()) } as any;
+      await Promise.all((before[id] || []).map((p) => fetch('/api/admin/user-permissions', { method: 'DELETE', headers, body: JSON.stringify({ userId: id, permission: p }) })));
     } catch (e: any) {
       setUserPermissions(before);
       toast({ title: 'Erro ao remover permissões', description: (e && e.message) || 'Tente novamente' });
