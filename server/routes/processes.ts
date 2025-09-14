@@ -55,7 +55,7 @@ export const listProcesses: RequestHandler = async (_req, res) => {
     const items = procs.map((p: any) => {
       const emp = employeesById.get(p.employee_id);
       const funcionario = emp?.nome_completo ?? emp?.matricula ?? "";
-      const d = p.created_at ?? p.data_ocorrencia ?? p.createdAt ?? p.dataOcorrencia;
+      const d = p.created_at ?? (p as any).data_da_ocorrencia ?? p.createdAt ?? (p as any).dataOcorrencia;
       const dataAbertura = d ? new Date(d).toLocaleDateString() : "";
       return {
         id: p.id,
