@@ -17,6 +17,7 @@ DECLARE
   has_classificacao boolean;
   has_classification boolean;
   has_data_ocorrencia boolean;
+  has_data_da_ocorrencia boolean;
   date_col text;
   tipo_col text;
   class_col text;
@@ -44,10 +45,19 @@ BEGIN
 
   SELECT EXISTS (
     SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='processes' AND column_name='data_da_ocorrencia'
+  ) INTO has_data_da_ocorrencia;
+
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
     WHERE table_schema='public' AND table_name='processes' AND column_name='data_ocorrencia'
   ) INTO has_data_ocorrencia;
 
-  date_col := CASE WHEN has_data_ocorrencia THEN 'data_ocorrencia' ELSE 'created_at' END;
+  date_col := CASE
+                WHEN has_data_da_ocorrencia THEN 'data_da_ocorrencia'
+                WHEN has_data_ocorrencia THEN 'data_ocorrencia'
+                ELSE 'created_at'
+              END;
   tipo_col := CASE
                 WHEN has_tipo_desvio THEN 'tipo_desvio'
                 WHEN has_misconduct_type THEN 'misconduct_type'
