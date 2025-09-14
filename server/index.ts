@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
-import { createUserAndProfile, listProfiles, listRecentLogins, listRecentActivities, listPermissions, getProfilePermissions, addProfilePermission, removeProfilePermission, importEmployees } from "./routes/admin";
+import { createUserAndProfile, listProfiles, listRecentLogins, listRecentActivities, listPermissions, getProfilePermissions, addProfilePermission, removeProfilePermission, importEmployees, getUserPermissions, addUserPermission, removeUserPermission } from "./routes/admin";
 import { listProcesses } from "./routes/processes";
 
 export function createServer() {
@@ -31,6 +31,10 @@ export function createServer() {
   app.get("/api/admin/profile-permissions", getProfilePermissions as any);
   app.post("/api/admin/profile-permissions", addProfilePermission as any);
   app.delete("/api/admin/profile-permissions", removeProfilePermission as any);
+  // Per-user permissions
+  app.get("/api/admin/user-permissions/:userId", getUserPermissions as any);
+  app.post("/api/admin/user-permissions", addUserPermission as any);
+  app.delete("/api/admin/user-permissions", removeUserPermission as any);
 
   // Import employees (CSV)
   app.post("/api/admin/import-employees", importEmployees as any);
