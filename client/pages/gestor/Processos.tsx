@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchProcesses } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 type Classificacao = "Leve" | "Média" | "Grave" | "Gravíssima";
 type StatusAtual = "Em Análise" | "Sindicância" | "Aguardando Assinatura" | "Finalizado";
