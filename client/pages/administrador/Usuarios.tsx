@@ -427,7 +427,7 @@ export default function UsuariosAdminPage() {
                                   <Checkbox checked={!!(profilePermissions[perfil]?.includes(perm))} onCheckedChange={(v) => togglePermission(perfil, perm, Boolean(v))} />
                                   <div className="text-sm leading-5">
                                     {permLabel(perm)}
-                                    <span className="ml-2 text-xs text-sis-secondary-text">({perm})</span>
+                                    
                                   </div>
                                 </label>
                               ))}
