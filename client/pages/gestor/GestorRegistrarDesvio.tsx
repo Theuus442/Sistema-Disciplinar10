@@ -103,7 +103,7 @@ export default function GestorRegistrarDesvio() {
         return;
       }
 
-      const selectedType = misconductTypes.find((t) => t.id === selectedMisconductTypeId);
+      const selectedType = misconductTypes.find((t) => String(t.id) === selectedMisconductTypeId);
       if (!selectedType?.id) {
         toast.error("Selecione um Tipo de Desvio válido.");
         return;
@@ -245,7 +245,7 @@ export default function GestorRegistrarDesvio() {
                     onChange={(e) => {
                       const v = e.target.value;
                       setSelectedMisconductTypeId(v);
-                      const found = misconductTypes.find((t) => t.id === v);
+                      const found = misconductTypes.find((t) => String(t.id) === v);
                       if (found && found.default_classification) {
                         setClassificacao(found.default_classification === 'Media' ? 'Média' : found.default_classification);
                       }
@@ -257,7 +257,7 @@ export default function GestorRegistrarDesvio() {
                     </option>
                     {misconductTypes.length > 0 ? (
                       misconductTypes.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
+                        <option key={t.id} value={String(t.id)}>{t.name}</option>
                       ))
                     ) : (
                       <>
