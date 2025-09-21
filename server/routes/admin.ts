@@ -65,104 +65,187 @@ async function ensureAdmin(req: any, res: any) {
     const auth = (req.headers?.authorization as string) || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
 
-    console.info('ensureAdmin: received authorization header?', !!auth, 'headerLength', auth?.length ?? 0);
     if (!token) {
-      console.warn('ensureAdmin: no token provided');
       res.status(401).json({ error: "Não autorizado: token não fornecido." });
       return null;
     }
 
-    const masked = token && token.length > 16 ? `${token.slice(0,8)}...${token.slice(-8)}` : token;
-    console.info('ensureAdmin: token masked preview=', masked, 'tokenLength=', token.length);
-
     const userClient = getAnonClientWithToken(token);
     if (!userClient) {
-      console.error('ensureAdmin: failed to create anon client with provided token');
       res.status(500).json({ error: "Configuração Supabase ausente (URL/ANON)." });
       return null;
     }
-    console.info('ensureAdmin: userClient created successfully');
 
-    // Decode JWT localmente to get possible user id without network call
     let userId: string | null = null;
-    let decodedPayload: any = null;
     try {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        decodedPayload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-        userId = decodedPayload?.sub ?? null;
-        console.info('ensureAdmin: decoded JWT payload', decodedPayload);
-      }
-    } catch (err) {
-      console.warn('ensureAdmin: failed to decode JWT locally', err);
-    }
-
-    if (!userId) {
-      try {
-        const { data: userData, error: getUserErr } = await userClient.auth.getUser();
-        if (getUserErr) {
-          console.error('ensureAdmin: userClient.auth.getUser returned error', getUserErr);
-          res.status(401).json({ error: 'Token inválido ou problema na autenticação.' });
-          return null;
-        }
-        console.info('ensureAdmin: auth.getUser result', { userData });
-        userId = (userData?.user as any)?.id ?? null;
-      } catch (e: any) {
-        console.error('ensureAdmin: auth.getUser failed', e?.stack || e?.message || e);
+      const { data: userData, error: getUserErr } = await userClient.auth.getUser();
+      if (getUserErr) {
         res.status(401).json({ error: 'Token inválido ou problema na autenticação.' });
         return null;
       }
+      userId = (userData?.user as any)?.id ?? null;
+    } catch (e: any) {
+      res.status(401).json({ error: 'Token inválido ou problema na autenticação.' });
+      return null;
     }
 
     if (!userId) {
-      console.error('ensureAdmin: could not determine userId from token or auth.getUser');
       res.status(401).json({ error: "Token inválido." });
       return null;
     }
 
-    console.info('ensureAdmin: resolved userId=', userId);
-
-    // Verify profile using the user token (no service role required for this check)
     let profile: any = null;
     try {
       const profResp = await userClient.from('profiles').select('id,perfil,nome,email').eq('id', userId).maybeSingle();
-      console.info('ensureAdmin: profiles select response', profResp);
-
       if (profResp && (profResp as any).error) {
-        console.error('ensureAdmin: profiles select returned error', (profResp as any).error);
         res.status(401).json({ error: 'Token inválido ou sem permissão para acessar perfil.' });
         return null;
       }
-
       profile = (profResp as any).data ?? profResp;
-      console.info('ensureAdmin: profile found for userId', userId, profile);
     } catch (e: any) {
-      console.error('ensureAdmin: profiles select failed', e?.stack || e?.message || e);
       res.status(401).json({ error: 'Token inválido ou sem permissão para acessar perfil.' });
       return null;
     }
 
     const perfilLower = (profile?.perfil ?? '').toLowerCase();
-    console.info('ensureAdmin: profile.perfil (normalized)=', perfilLower);
     if (perfilLower !== 'administrador') {
-      console.warn('ensureAdmin: access denied - not an administrador');
       res.status(403).json({ error: "Acesso proibido: somente administradores." });
       return null;
     }
 
-    // Try elevated client; fall back to userClient if service role is not configured
     const admin = getAdminClient();
-    if (admin) console.info('ensureAdmin: admin client available (service role)');
-    else console.info('ensureAdmin: admin client NOT available, will use user client (respecting RLS)');
-
     const db = admin ?? userClient;
     return { admin, db, userId };
   } catch (e: any) {
-    console.error('ensureAdmin error', e?.stack || e?.message || e);
     res.status(500).json({ error: e?.message || String(e) });
     return null;
   }
 }
+
+// ------------------------- Permissions management helpers -------------------------
+
+function isMissingTableOrColumn(err: any) {
+  const msg = (err && (err.message || String(err))) || '';
+  const code = String((err as any)?.code || '');
+  if (/42P01/.test(code)) return true; // undefined_table
+  if (/42703/.test(code)) return true; // undefined_column
+  if (/relation .* does not exist/i.test(msg)) return true;
+  if (/Could not find the table/i.test(msg)) return true;
+  if (/Could not find the '.*' column/i.test(msg)) return true;
+  return false;
+}
+
+async function insertProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
+  // Try direct text column combinations
+  let lastErr: any = null;
+  try {
+    const { error } = await db.from('profile_permissions').insert({ perfil: perfilKey, permission: permissionName } as any);
+    if (!error) return;
+    lastErr = error;
+  } catch (e) { lastErr = e; }
+  try {
+    const { error } = await db.from('profile_permissions').insert({ profile_name: perfilKey, permission: permissionName } as any);
+    if (!error) return;
+    lastErr = error;
+  } catch (e) { lastErr = e; }
+  // Try permission_id mapping via permissions table
+  try {
+    const { data: permByName } = await db.from('permissions').select('id,name,permission').or(`name.eq.${permissionName},permission.eq.${permissionName}`).limit(1);
+    const permId = Array.isArray(permByName) && permByName[0]?.id;
+    if (!permId) throw new Error('permission not found');
+    try {
+      const { error } = await db.from('profile_permissions').insert({ perfil: perfilKey, permission_id: permId } as any);
+      if (!error) return;
+      lastErr = error;
+    } catch (e) { lastErr = e; }
+    try {
+      const { error } = await db.from('profile_permissions').insert({ profile_name: perfilKey, permission_id: permId } as any);
+      if (!error) return;
+      lastErr = error;
+    } catch (e) { lastErr = e; }
+  } catch (e) { lastErr = e; }
+  throw lastErr;
+}
+
+async function deleteProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
+  // Try delete by text permission
+  let lastErr: any = null;
+  try {
+    const { error } = await db.from('profile_permissions').delete().eq('perfil', perfilKey).eq('permission', permissionName);
+    if (!error) return;
+    lastErr = error;
+  } catch (e) { lastErr = e; }
+  try {
+    const { error } = await db.from('profile_permissions').delete().eq('profile_name', perfilKey).eq('permission', permissionName);
+    if (!error) return;
+    lastErr = error;
+  } catch (e) { lastErr = e; }
+  // Try via permission_id
+  try {
+    const { data: permByName } = await db.from('permissions').select('id,name,permission').or(`name.eq.${permissionName},permission.eq.${permissionName}`).limit(1);
+    const permId = Array.isArray(permByName) && permByName[0]?.id;
+    if (!permId) throw new Error('permission not found');
+    try {
+      const { error } = await db.from('profile_permissions').delete().eq('perfil', perfilKey).eq('permission_id', permId);
+      if (!error) return;
+      lastErr = error;
+    } catch (e) { lastErr = e; }
+    try {
+      const { error } = await db.from('profile_permissions').delete().eq('profile_name', perfilKey).eq('permission_id', permId);
+      if (!error) return;
+      lastErr = error;
+    } catch (e) { lastErr = e; }
+  } catch (e) { lastErr = e; }
+  throw lastErr;
+}
+
+async function readProfilePermissionsFlexible(db: any): Promise<Record<string, string[]>> {
+  // Try simple shape
+  try {
+    const { data, error } = await db.from('profile_permissions').select('perfil, permission');
+    if (!error && Array.isArray(data)) {
+      const by: Record<string, string[]> = {};
+      for (const r of data as any[]) {
+        const p = r.perfil || 'unknown';
+        const perm = r.permission || '';
+        if (!perm) continue;
+        (by[p] = by[p] || []).push(perm);
+      }
+      if (Object.keys(by).length) return by;
+    }
+  } catch {}
+  // Try alternate column name
+  try {
+    const { data, error } = await db.from('profile_permissions').select('profile_name, permission');
+    if (!error && Array.isArray(data)) {
+      const by: Record<string, string[]> = {};
+      for (const r of data as any[]) {
+        const p = r.profile_name || 'unknown';
+        const perm = r.permission || '';
+        if (!perm) continue;
+        (by[p] = by[p] || []).push(perm);
+      }
+      if (Object.keys(by).length) return by;
+    }
+  } catch {}
+  // Try join to permissions table
+  try {
+    const { data, error } = await db.from('profile_permissions').select('perfil, profile_name, permission, permission_id, permissions ( name, permission )');
+    if (!error && Array.isArray(data)) {
+      const by: Record<string, string[]> = {};
+      for (const r of data as any[]) {
+        const p = r.perfil || r.profile_name || 'unknown';
+        const perm = r.permission || r?.permissions?.name || r?.permissions?.permission || '';
+        if (!perm) continue;
+        (by[p] = by[p] || []).push(perm);
+      }
+      return by;
+    }
+  } catch {}
+  return {};
+}
+
+// ------------------------- Users -------------------------
 
 export const listProfiles: RequestHandler = async (_req, res) => {
   try {
@@ -177,13 +260,11 @@ export const listProfiles: RequestHandler = async (_req, res) => {
 
     const rows = Array.isArray(data) ? data : [];
 
-    // Mapa de nomes para lookup rápido (gestor)
     const profileNameById = new Map<string, string>();
     for (const p of rows as any[]) {
       if (p?.id) profileNameById.set(p.id, p?.nome ?? "");
     }
 
-    // Mapear emails via admin, se disponível; caso contrário, depender de profiles.email
     const emailById = new Map<string, string>();
     if (ctx.admin) {
       try {
@@ -193,14 +274,13 @@ export const listProfiles: RequestHandler = async (_req, res) => {
       } catch {}
     }
 
-    // Funcion��rios relacionados
     const funcionarioIds = rows
       .filter((p: any) => (p?.perfil ?? "funcionario") === "funcionario")
       .map((p: any) => p.id);
     let employeesById = new Map<string, any>();
     if (funcionarioIds.length > 0) {
-      const { data: employeesData } = await db.from("employees").select("*").in("id", funcionarioIds as any);
-      for (const e of employeesData || []) {
+      const { data: employees } = await db.from("employees").select("*").in("id", funcionarioIds as any);
+      for (const e of employees || []) {
         employeesById.set((e as any).id, e);
       }
     }
@@ -230,7 +310,6 @@ export const listProfiles: RequestHandler = async (_req, res) => {
 
     return res.json(normalized);
   } catch (e: any) {
-    console.error('/api/admin/users error', e?.stack || e?.message || e);
     return res.status(500).json({ error: e?.message || String(e) });
   }
 };
@@ -292,7 +371,6 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
     if (!ctx) return;
     const db = ctx.db;
 
-    // Buscar perfis recententes e, se possível, enriquecer com last_sign_in_at via admin
     const { data: profs, error } = await db.from("profiles").select("*").limit(100);
     if (error) return res.status(400).json({ error: error.message });
 
@@ -336,7 +414,6 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
     if (!ctx) return;
     const db = ctx.db;
 
-    // Limitar consultas para evitar payloads grandes
     const { data: processes, error: procErr } = await db
       .from("processes")
       .select("*")
@@ -366,7 +443,6 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
         };
       });
 
-    // Usuários criados/atualizados recentemente (flexível a diferentes colunas)
     const { data: recentProfiles, error: profilesErr } = await db
       .from("profiles")
       .select("*")
@@ -393,28 +469,20 @@ export const listRecentActivities: RequestHandler = async (_req, res) => {
 
 // ------------------------- Permissions management -------------------------
 
-async function tableMissing(err: any) {
-  const msg = (err && (err.message || String(err))) || '';
-  return /relation .* does not exist/i.test(msg) || /42P01/.test(String((err as any)?.code || ''));
-}
-
 export const listPermissions: RequestHandler = async (_req, res) => {
   try {
     const ctx = await ensureAdmin(_req, res);
     if (!ctx) return;
     const db = ctx.db;
 
-    // Tenta ler da tabela permissions; se não existir, retorna lista padrão
     try {
-      const { data, error } = await db.from('permissions').select('permission, description');
+      const { data, error } = await db.from('permissions').select('permission, name');
       if (!error && Array.isArray(data) && data.length > 0) {
-        return res.json((data as any).map((d: any) => d.permission));
+        const names = (data as any).map((d: any) => d.permission || d.name).filter(Boolean);
+        if (names.length) return res.json(names);
       }
-    } catch (e) {
-      // ignore - tabela pode não existir
-    }
+    } catch {}
 
-    // Lista padrão
     return res.json([
       'process:criar',
       'process:ver',
@@ -434,17 +502,8 @@ export const getProfilePermissions: RequestHandler = async (_req, res) => {
     const db = ctx.db;
 
     try {
-      const { data, error } = await db.from('profile_permissions').select('*');
-      if (error) return res.status(400).json({ error: error.message });
-      const rows = Array.isArray(data) ? data : [];
-      // Agrupar por perfil
-      const byProfile: Record<string, string[]> = {};
-      for (const r of rows as any[]) {
-        const p = r.perfil || 'unknown';
-        byProfile[p] = byProfile[p] || [];
-        byProfile[p].push(r.permission);
-      }
-      return res.json(byProfile);
+      const by = await readProfilePermissionsFlexible(db);
+      return res.json(by);
     } catch (e: any) {
       return res.status(500).json({ error: e?.message || String(e) });
     }
@@ -461,11 +520,11 @@ export const addProfilePermission: RequestHandler = async (req, res) => {
     const { perfil, permission } = req.body as any;
     if (!perfil || !permission) return res.status(400).json({ error: 'perfil and permission required' });
     try {
-      const { error } = await db.from('profile_permissions').insert({ perfil, permission });
-      if (error) return res.status(400).json({ error: error.message });
+      await insertProfilePermissionFlexible(db, perfil, permission);
       return res.json({ ok: true });
     } catch (e: any) {
-      return res.status(500).json({ error: e?.message || String(e) });
+      const msg = isMissingTableOrColumn(e) ? 'Tabela/coluna permissions/profile_permissions ausente.' : (e?.message || String(e));
+      return res.status(400).json({ error: msg });
     }
   } catch (e: any) {
     return res.status(500).json({ error: e?.message || String(e) });
@@ -480,18 +539,16 @@ export const removeProfilePermission: RequestHandler = async (req, res) => {
     const { perfil, permission } = req.body as any;
     if (!perfil || !permission) return res.status(400).json({ error: 'perfil and permission required' });
     try {
-      const { error } = await db.from('profile_permissions').delete().eq('perfil', perfil).eq('permission', permission);
-      if (error) return res.status(400).json({ error: error.message });
+      await deleteProfilePermissionFlexible(db, perfil, permission);
       return res.json({ ok: true });
     } catch (e: any) {
-      return res.status(500).json({ error: e?.message || String(e) });
+      const msg = isMissingTableOrColumn(e) ? 'Tabela/coluna permissions/profile_permissions ausente.' : (e?.message || String(e));
+      return res.status(400).json({ error: msg });
     }
   } catch (e: any) {
     return res.status(500).json({ error: e?.message || String(e) });
   }
 };
-
-// --------- User-specific permissions (fallback to profile_permissions with key user:{id}) ---------
 
 async function getUserPerms(db: any, userId: string): Promise<string[]> {
   try {
@@ -499,14 +556,23 @@ async function getUserPerms(db: any, userId: string): Promise<string[]> {
     if (error) throw error;
     return (data || []).map((r: any) => r.permission);
   } catch (e: any) {
-    if (await tableMissing(e)) {
+    if (isMissingTableOrColumn(e)) {
+      const key = `user:${userId}`;
+      // Try simple
       try {
-        const { data, error } = await db.from('profile_permissions').select('permission').eq('perfil', `user:${userId}`);
-        if (error) throw error;
-        return (data || []).map((r: any) => r.permission);
-      } catch {
-        return [];
-      }
+        const { data } = await db.from('profile_permissions').select('permission').eq('perfil', key);
+        if (Array.isArray(data) && data.length) return data.map((r: any) => r.permission).filter(Boolean);
+      } catch {}
+      try {
+        const { data } = await db.from('profile_permissions').select('permission').eq('profile_name', key);
+        if (Array.isArray(data) && data.length) return data.map((r: any) => r.permission).filter(Boolean);
+      } catch {}
+      // Try joined permissions
+      try {
+        const { data } = await db.from('profile_permissions').select('permissions ( name, permission ), permission').or(`perfil.eq.${key},profile_name.eq.${key}`);
+        if (Array.isArray(data) && data.length) return data.map((r: any) => r.permission || r?.permissions?.name || r?.permissions?.permission).filter(Boolean);
+      } catch {}
+      return [];
     }
     return [];
   }
@@ -537,9 +603,12 @@ export const addUserPermission: RequestHandler = async (req, res) => {
       const { error } = await db.from('user_permissions').insert({ user_id: userId, permission });
       if (error) throw error;
     } catch (e: any) {
-      if (await tableMissing(e)) {
-        const { error: fbErr } = await db.from('profile_permissions').insert({ perfil: `user:${userId}`, permission });
-        if (fbErr) return res.status(400).json({ error: fbErr.message });
+      if (isMissingTableOrColumn(e)) {
+        try {
+          await insertProfilePermissionFlexible(db, `user:${userId}`, permission);
+        } catch (fbErr: any) {
+          return res.status(400).json({ error: fbErr?.message || String(fbErr) });
+        }
       } else {
         return res.status(400).json({ error: e?.message || String(e) });
       }
@@ -561,9 +630,12 @@ export const removeUserPermission: RequestHandler = async (req, res) => {
       const { error } = await db.from('user_permissions').delete().eq('user_id', userId).eq('permission', permission);
       if (error) throw error;
     } catch (e: any) {
-      if (await tableMissing(e)) {
-        const { error: fbErr } = await db.from('profile_permissions').delete().eq('perfil', `user:${userId}`).eq('permission', permission);
-        if (fbErr) return res.status(400).json({ error: fbErr.message });
+      if (isMissingTableOrColumn(e)) {
+        try {
+          await deleteProfilePermissionFlexible(db, `user:${userId}`, permission);
+        } catch (fbErr: any) {
+          return res.status(400).json({ error: fbErr?.message || String(fbErr) });
+        }
       } else {
         return res.status(400).json({ error: e?.message || String(e) });
       }
@@ -577,7 +649,6 @@ export const removeUserPermission: RequestHandler = async (req, res) => {
 // ------------------------- Import employees (CSV) -------------------------
 
 function parseCsvToObjects(csvText: string) {
-  // Very small CSV parser handling quoted fields and commas
   const rows: string[][] = [];
   let cur = '';
   let row: string[] = [];
@@ -588,7 +659,7 @@ function parseCsvToObjects(csvText: string) {
     if (ch === '"') {
       if (inQuotes && next === '"') {
         cur += '"';
-        i++; // skip escaped quote
+        i++;
       } else {
         inQuotes = !inQuotes;
       }
@@ -602,7 +673,6 @@ function parseCsvToObjects(csvText: string) {
         row = [];
         cur = '';
       }
-      // handle CRLF
       if (ch === '\r' && next === '\n') i++;
     } else {
       cur += ch;
@@ -617,7 +687,7 @@ function parseCsvToObjects(csvText: string) {
   const objs: any[] = [];
   for (let r = 1; r < rows.length; r++) {
     const values = rows[r];
-    if (values.length === 1 && values[0].trim() === '') continue; // skip empty line
+    if (values.length === 1 && values[0].trim() === '') continue;
     const obj: any = {};
     for (let c = 0; c < headers.length; c++) {
       obj[headers[c]] = (values[c] ?? '').trim();
@@ -633,7 +703,6 @@ export const importEmployees: RequestHandler = async (req, res) => {
     if (!ctx) return;
     const db = ctx.db;
 
-    // Expect JSON payload: { csv: '...' }
     const body = req.body as any;
     const csv = body?.csv as string | undefined;
     if (!csv) return res.status(400).json({ error: 'csv required in body (as text)' });
@@ -659,17 +728,12 @@ export const importEmployees: RequestHandler = async (req, res) => {
       matriculas.add(matricula);
     }
 
-    // Query existing by matricula
-    const { data: existing, error: existErr } = await db.from('employees').select('matricula').in('matricula', Array.from(matriculas) as any);
-    if (existErr) {
-      console.error('Error fetching existing employees', existErr);
-    }
+    const { data: existing } = await db.from('employees').select('matricula').in('matricula', Array.from(matriculas) as any);
     const existingSet = new Set((existing || []).map((e: any) => e.matricula));
 
     const inserted = toUpsert.filter((t) => !existingSet.has(t.matricula)).length;
     const updated = toUpsert.filter((t) => existingSet.has(t.matricula)).length;
 
-    // Perform upsert (on conflict matricula)
     const { error: upsertErr } = await db.from('employees').upsert(toUpsert as any, { onConflict: 'matricula' });
     if (upsertErr) {
       return res.status(500).json({ error: upsertErr.message || String(upsertErr) });
@@ -677,7 +741,6 @@ export const importEmployees: RequestHandler = async (req, res) => {
 
     return res.json({ inserted, updated, errors: details.length, details });
   } catch (e: any) {
-    console.error('importEmployees error', e?.stack || e?.message || e);
     return res.status(500).json({ error: e?.message || String(e) });
   }
 };
