@@ -23,7 +23,7 @@ export default function AdministradorDashboard() {
       try {
         const res = await fetch("/api/admin/users", { headers: await authHeaders() });
         if (res.status === 401) {
-          window.location.assign("/autenticacao/login");
+          window.location.assign("/");
           return;
         }
         if (!res.ok) throw new Error(String(res.status));
