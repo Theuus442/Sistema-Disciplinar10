@@ -148,8 +148,35 @@ export async function updateProcess(id: string, patch: Partial<ProcessoAPI>) {
   if (error) throw error;
 }
 
+let tokenWaiter: Promise<string | undefined> | null = null;
+async function getAccessToken(): Promise<string | undefined> {
+  // Fast path
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) return data.session.access_token;
+  } catch {}
+
+  if (!tokenWaiter) {
+    tokenWaiter = new Promise<string | undefined>((resolve) => {
+      const timeout = setTimeout(() => resolve(undefined), 3000);
+      const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+        if (session?.access_token) {
+          clearTimeout(timeout);
+          sub.subscription.unsubscribe();
+          resolve(session.access_token);
+        }
+      });
+      // Best-effort refresh
+      supabase.auth.getUser().catch(() => {});
+      supabase.auth.refreshSession().catch(() => {});
+    }).finally(() => {
+      tokenWaiter = null;
+    });
+  }
+  return tokenWaiter;
+}
+
 export async function authHeaders(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data?.session?.access_token;
+  const token = await getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
