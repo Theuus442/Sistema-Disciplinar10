@@ -180,3 +180,46 @@ export async function authHeaders(): Promise<Record<string, string>> {
   const token = await getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+
+// ---------------- Admin Permissions API ----------------
+async function api<T = any>(path: string, init?: RequestInit): Promise<T> {
+  const headers = { "Content-Type": "application/json", ...(await authHeaders()) } as any;
+  const res = await fetch(path, { ...init, headers });
+  if (!res.ok) {
+    let msg = `Erro ${res.status}`;
+    try {
+      const j = await res.json();
+      if (j?.error) msg = j.error;
+    } catch {}
+    throw new Error(msg);
+  }
+  return (await res.json()) as T;
+}
+
+export async function fetchAvailablePermissions(): Promise<string[]> {
+  return api<string[]>("/api/admin/permissions");
+}
+
+export async function fetchProfilePermissions(): Promise<Record<string, string[]>> {
+  return api<Record<string, string[]>>("/api/admin/profile-permissions");
+}
+
+export async function setProfilePermission(perfil: PerfilUsuario, permission: string, enabled: boolean): Promise<void> {
+  if (enabled) {
+    await api("/api/admin/profile-permissions", { method: "POST", body: JSON.stringify({ perfil, permission }) });
+  } else {
+    await api("/api/admin/profile-permissions", { method: "DELETE", body: JSON.stringify({ perfil, permission }) });
+  }
+}
+
+export async function fetchUserPermissions(userId: string): Promise<string[]> {
+  return api<string[]>(`/api/admin/user-permissions/${encodeURIComponent(userId)}`);
+}
+
+export async function setUserPermission(userId: string, permission: string, enabled: boolean): Promise<void> {
+  if (enabled) {
+    await api("/api/admin/user-permissions", { method: "POST", body: JSON.stringify({ userId, permission }) });
+  } else {
+    await api("/api/admin/user-permissions", { method: "DELETE", body: JSON.stringify({ userId, permission }) });
+  }
+}
