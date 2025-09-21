@@ -201,7 +201,11 @@ export async function fetchAvailablePermissions(): Promise<string[]> {
 }
 
 export async function fetchProfilePermissions(): Promise<Record<string, string[]>> {
-  return api<Record<string, string[]>>("/api/admin/profile-permissions");
+  try {
+    return await api<Record<string, string[]>>("/api/admin/profile-permissions");
+  } catch {
+    return {};
+  }
 }
 
 export async function setProfilePermission(perfil: PerfilUsuario, permission: string, enabled: boolean): Promise<void> {
