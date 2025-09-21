@@ -30,7 +30,7 @@ export default function UltimosLogins() {
     (async () => {
       try {
         const res = await fetch("/api/admin/logins", { headers: await authHeaders() });
-        if (res.status === 401) { window.location.assign('/autenticacao/login'); return; }
+        if (res.status === 401) { window.location.assign('/'); return; }
         if (!res.ok) throw new Error(`${res.status}`);
         const data = (await res.json()) as LoginItem[];
         if (mounted) setItems(Array.isArray(data) ? data : []);
