@@ -9,7 +9,7 @@ export default function GestorRegistrarDesvio() {
   const [funcionarios, setFuncionarios] = useState<Array<{ id: string; nome: string }>>([]);
   const [misconductTypes, setMisconductTypes] = useState<Array<{ id: string; name: string; default_classification?: string }>>([]);
   const [dataOcorrencia, setDataOcorrencia] = useState("");
-  const [tipoDesvio, setTipoDesvio] = useState("");
+  const [selectedMisconductTypeId, setSelectedMisconductTypeId] = useState("");
   const [classificacao, setClassificacao] = useState("");
   const [descricao, setDescricao] = useState("");
   const [anexos, setAnexos] = useState<File[]>([]);
@@ -89,7 +89,7 @@ export default function GestorRegistrarDesvio() {
   const enviarFormulario = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!funcionarioId || !dataOcorrencia || !tipoDesvio || !classificacao || !descricao) {
+    if (!funcionarioId || !dataOcorrencia || !selectedMisconductTypeId || !classificacao || !descricao) {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
@@ -103,7 +103,7 @@ export default function GestorRegistrarDesvio() {
         return;
       }
 
-      const selectedType = misconductTypes.find((t) => t.id === tipoDesvio || t.name === tipoDesvio);
+      const selectedType = misconductTypes.find((t) => t.id === selectedMisconductTypeId);
       if (!selectedType?.id) {
         toast.error("Selecione um Tipo de Desvio válido.");
         return;
@@ -113,7 +113,7 @@ export default function GestorRegistrarDesvio() {
       const payload: any = {
         id: genId(),
         employee_id: funcionarioId,
-        misconduct_type_id: selectedType.id,
+        misconduct_type_id: selectedMisconductTypeId,
         classificacao: classificacao === "Média" ? "Media" : classificacao,
         descricao,
         data_da_ocorrencia: dataOcorrencia ? new Date(dataOcorrencia).toISOString() : null,
@@ -128,7 +128,7 @@ export default function GestorRegistrarDesvio() {
 
       setFuncionarioId("");
       setDataOcorrencia("");
-      setTipoDesvio("");
+      setSelectedMisconductTypeId("");
       setClassificacao("");
       setDescricao("");
       setAnexos([]);
@@ -241,11 +241,11 @@ export default function GestorRegistrarDesvio() {
                     Tipo de Desvio
                   </label>
                   <select
-                    value={tipoDesvio}
+                    value={selectedMisconductTypeId}
                     onChange={(e) => {
                       const v = e.target.value;
-                      setTipoDesvio(v);
-                      const found = misconductTypes.find((t) => t.id === v || t.name === v);
+                      setSelectedMisconductTypeId(v);
+                      const found = misconductTypes.find((t) => t.id === v);
                       if (found && found.default_classification) {
                         setClassificacao(found.default_classification === 'Media' ? 'Média' : found.default_classification);
                       }
@@ -329,7 +329,7 @@ export default function GestorRegistrarDesvio() {
                   onClick={() => {
                     setFuncionarioId("");
                     setDataOcorrencia("");
-                    setTipoDesvio("");
+                    setSelectedMisconductTypeId("");
                     setClassificacao("");
                     setDescricao("");
                     setAnexos([]);
