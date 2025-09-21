@@ -12,6 +12,7 @@ import GestorDashboard from "./pages/gestor/GestorDashboard";
 import AdministradorDashboard from "./pages/administrador/AdministradorDashboard";
 import UsuariosAdminPage from "./pages/administrador/Usuarios";
 import ConfiguracoesSistemaAdminPage from "./pages/administrador/ConfiguracoesSistema";
+import PermissoesAdminPage from "./pages/administrador/Permissoes";
 import ImportarFuncionariosPage from "./pages/administrador/ImportarFuncionarios";
 import JuridicoDashboard from "./pages/juridico/JuridicoDashboard";
 import RevisaoProcessoJuridico from "./pages/juridico/RevisaoProcessoJuridico";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/administrador/usuarios" element={<UsuariosAdminPage />} />
             <Route path="/administrador/importar-funcionarios" element={<RequireRole allowed={["administrador"]}><ImportarFuncionariosPage /></RequireRole>} />
             <Route path="/administrador/configuracoes" element={<RequireRole allowed={["administrador"]}><ConfiguracoesSistemaAdminPage /></RequireRole>} />
+            <Route path="/administrador/permissoes" element={<RequireRole allowed={["administrador"]}><PermissoesAdminPage /></RequireRole>} />
             <Route path="/juridico" element={<JuridicoDashboard />} />
             <Route path="/juridico/processos/aguardando" element={<ProcessosAguardandoAnalise />} />
             <Route path="/juridico/processos/todos" element={<TodosProcessos />} />
