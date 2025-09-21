@@ -22,9 +22,16 @@ export default function AdministradorDashboard() {
     (async () => {
       try {
         const res = await fetch("/api/admin/users", { headers: await authHeaders() });
+        if (res.status === 401) {
+          if (mounted) setTotalUsuarios(0);
+          return;
+        }
+        if (!res.ok) throw new Error(String(res.status));
         const rows = (await res.json()) as any[];
-        if (mounted) setTotalUsuarios(rows.length);
-      } catch {}
+        if (mounted) setTotalUsuarios(Array.isArray(rows) ? rows.length : 0);
+      } catch {
+        if (mounted) setTotalUsuarios(0);
+      }
     })();
     return () => { mounted = false; };
   }, []);
