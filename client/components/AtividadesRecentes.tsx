@@ -29,7 +29,7 @@ export default function AtividadesRecentes() {
     (async () => {
       try {
         const res = await fetch("/api/admin/activities", { headers: await authHeaders() });
-        if (res.status === 401) { window.location.assign('/autenticacao/login'); return; }
+        if (res.status === 401) { window.location.assign('/'); return; }
         if (!res.ok) throw new Error(`${res.status}`);
         const data = (await res.json()) as ActivityItem[];
         if (mounted) setItems(Array.isArray(data) ? data : []);
