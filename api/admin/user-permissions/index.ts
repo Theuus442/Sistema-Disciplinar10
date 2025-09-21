@@ -9,49 +9,40 @@ async function ensureAdmin(req:VercelRequest,res:VercelResponse){ const auth=(re
 function isMissingTableOrColumn(err:any){ const msg=(err && (err.message||String(err)))||''; const code=String((err as any)?.code||''); return /42P01/.test(code) || /42703/.test(code) || /relation .* does not exist/i.test(msg) || /Could not find the table/i.test(msg) || /Could not find the '.*' column/i.test(msg); }
 async function insertProfilePermissionFlexible(db:any, perfilKey:string, permissionName:string){ let lastErr:any=null; try{ const {error}=await db.from('profile_permissions').insert({perfil:perfilKey,permission:permissionName} as any); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {error}=await db.from('profile_permissions').insert({profile_name:perfilKey,permission:permissionName} as any); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {data}=await db.from('permissions').select('id,name,permission').or(`name.eq.${permissionName},permission.eq.${permissionName}`).limit(1); const permId=Array.isArray(data) && data[0]?.id; if(!permId) throw new Error('permission not found'); try{ const {error}=await db.from('profile_permissions').insert({perfil:perfilKey,permission_id:permId} as any); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {error}=await db.from('profile_permissions').insert({profile_name:perfilKey,permission_id:permId} as any); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } }catch(e){ lastErr=e; } throw lastErr; }
 async function deleteProfilePermissionFlexible(db:any, perfilKey:string, permissionName:string){ let lastErr:any=null; try{ const {error}=await db.from('profile_permissions').delete().eq('perfil',perfilKey).eq('permission',permissionName); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {error}=await db.from('profile_permissions').delete().eq('profile_name',perfilKey).eq('permission',permissionName); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {data}=await db.from('permissions').select('id,name,permission').or(`name.eq.${permissionName},permission.eq.${permissionName}`).limit(1); const permId=Array.isArray(data) && data[0]?.id; if(!permId) throw new Error('permission not found'); try{ const {error}=await db.from('profile_permissions').delete().eq('perfil',perfilKey).eq('permission_id',permId); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {error}=await db.from('profile_permissions').delete().eq('profile_name',perfilKey).eq('permission_id',permId); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } }catch(e){ lastErr=e; } throw lastErr; }
-async function readProfilePermissionsFlexible(db:any){
-  try{ const {data,error}=await db.from('profile_permissions').select('perfil, permission'); if(!error && Array.isArray(data)){ const by: Record<string, string[]> = {}; for(const r of data as any[]){ const p=r.perfil||'unknown'; const perm=r.permission||''; if(!perm) continue; (by[p]=by[p]||[]).push(perm); } if(Object.keys(by).length) return by; } }catch{}
-  try{ const {data,error}=await db.from('profile_permissions').select('profile_name, permission'); if(!error && Array.isArray(data)){ const by: Record<string, string[]> = {}; for(const r of data as any[]){ const p=r.profile_name||'unknown'; const perm=r.permission||''; if(!perm) continue; (by[p]=by[p]||[]).push(perm); } if(Object.keys(by).length) return by; } }catch{}
-  try{ const {data,error}=await db.from('profile_permissions').select('perfil, profile_name, permission, permission_id, permissions ( name, permission )'); if(!error && Array.isArray(data)){ const by: Record<string, string[]> = {}; for(const r of data as any[]){ const p=r.perfil||r.profile_name||'unknown'; const perm=r.permission||r?.permissions?.name||r?.permissions?.permission||''; if(!perm) continue; (by[p]=by[p]||[]).push(perm); } return by; } }catch{}
-  return {} as Record<string,string[]>;
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse){
   const ctx = await ensureAdmin(req,res) as any; if(!ctx) return; const db = ctx.db;
 
-  if (req.method === 'GET') {
-    try {
-      const by = await readProfilePermissionsFlexible(db);
-      return res.json(by);
-    } catch (e:any) {
-      return res.status(500).json({ error: e?.message || String(e) });
-    }
-  }
-
   if (req.method === 'POST') {
-    const { perfil, permission } = req.body as any;
-    if (!perfil || !permission) return res.status(400).json({ error: 'perfil and permission required' });
+    const { userId, permission } = req.body as any;
+    if (!userId || !permission) return res.status(400).json({ error: 'userId and permission required' });
     try {
-      await insertProfilePermissionFlexible(db, perfil, permission);
+      const { error } = await db.from('user_permissions').insert({ user_id: userId, permission });
+      if (error) throw error;
       return res.json({ ok: true });
-    } catch (e:any) {
-      const msg = isMissingTableOrColumn(e) ? 'Tabela/coluna permissions/profile_permissions ausente.' : (e?.message || String(e));
-      return res.status(400).json({ error: msg });
+    } catch (e: any) {
+      if (isMissingTableOrColumn(e)) {
+        try { await insertProfilePermissionFlexible(db, `user:${userId}`, permission); return res.json({ ok: true }); } catch (fbErr:any) { return res.status(400).json({ error: fbErr?.message || String(fbErr) }); }
+      }
+      return res.status(400).json({ error: e?.message || String(e) });
     }
   }
 
   if (req.method === 'DELETE') {
-    const { perfil, permission } = req.body as any;
-    if (!perfil || !permission) return res.status(400).json({ error: 'perfil and permission required' });
+    const { userId, permission } = req.body as any;
+    if (!userId || !permission) return res.status(400).json({ error: 'userId and permission required' });
     try {
-      await deleteProfilePermissionFlexible(db, perfil, permission);
+      const { error } = await db.from('user_permissions').delete().eq('user_id', userId).eq('permission', permission);
+      if (error) throw error;
       return res.json({ ok: true });
-    } catch (e:any) {
-      const msg = isMissingTableOrColumn(e) ? 'Tabela/coluna permissions/profile_permissions ausente.' : (e?.message || String(e));
-      return res.status(400).json({ error: msg });
+    } catch (e: any) {
+      if (isMissingTableOrColumn(e)) {
+        try { await deleteProfilePermissionFlexible(db, `user:${userId}`, permission); return res.json({ ok: true }); } catch (fbErr:any) { return res.status(400).json({ error: fbErr?.message || String(fbErr) }); }
+      }
+      return res.status(400).json({ error: e?.message || String(e) });
     }
   }
 
-  res.setHeader('Allow', 'GET, POST, DELETE');
+  res.setHeader('Allow', 'POST, DELETE');
   return res.status(405).json({ error: 'Method Not Allowed' });
 }
