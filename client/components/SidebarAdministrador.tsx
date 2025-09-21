@@ -65,6 +65,22 @@ export default function SidebarAdministrador({ onSair }: SidebarAdministradorPro
         </svg>
       ),
     },
+    {
+      id: "permissoes",
+      nome: "Permissões",
+      icon: (
+        <svg
+          className="h-5 w-5 flex-shrink-0"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M10 1.66699C5.3975 1.66699 1.66669 5.3978 1.66669 10.0003C1.66669 14.6028 5.3975 18.3337 10 18.3337C14.6025 18.3337 18.3334 14.6028 18.3334 10.0003C18.3334 5.3978 14.6025 1.66699 10 1.66699ZM10 3.33366C13.682 3.33366 16.6667 6.31829 16.6667 10.0003C16.6667 13.6823 13.682 16.667 10 16.667C6.31802 16.667 3.33335 13.6823 3.33335 10.0003C3.33335 6.31829 6.31802 3.33366 10 3.33366ZM9.16669 6.66699V10.8337H13.3334V9.16699H10.8334V6.66699H9.16669Z" fill="currentColor"/>
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -88,6 +104,7 @@ export default function SidebarAdministrador({ onSair }: SidebarAdministradorPro
                 if (item.id === "dashboard") navigate("/administrador");
                 if (item.id === "gerenciamento-usuarios") navigate("/administrador/usuarios");
                 if (item.id === "configuracoes-sistema") navigate("/administrador/configuracoes");
+                if (item.id === "permissoes") navigate("/administrador/permissoes");
               }}
               className={`flex w-full items-center space-x-3 rounded-md px-2 py-2.5 text-left font-roboto text-sm font-medium transition-colors ${
                 activeItem === item.id
