@@ -62,10 +62,7 @@ async function ensureAdmin(req: VercelRequest, res: VercelResponse) {
   return { admin, db } as const;
 }
 
-async function tableMissing(err: any) {
-  const msg = (err && (err.message || String(err))) || '';
-  return /relation .* does not exist/i.test(msg) || /42P01/.test(String((err as any)?.code || ''));
-}
+function isMissingTableOrColumn(err:any){ const msg=(err && (err.message||String(err)))||''; const code=String((err as any)?.code||''); return /42P01/.test(code) || /42703/.test(code) || /relation .* does not exist/i.test(msg) || /Could not find the table/i.test(msg) || /Could not find the '.*' column/i.test(msg); }
 
 async function getUserPerms(db: any, userId: string): Promise<string[]> {
   try {
@@ -73,14 +70,21 @@ async function getUserPerms(db: any, userId: string): Promise<string[]> {
     if (error) throw error;
     return (data || []).map((r: any) => r.permission);
   } catch (e: any) {
-    if (await tableMissing(e)) {
+    if (isMissingTableOrColumn(e)) {
+      const key = `user:${userId}`;
       try {
-        const { data, error } = await db.from('profile_permissions').select('permission').eq('perfil', `user:${userId}`);
-        if (error) throw error;
-        return (data || []).map((r: any) => r.permission);
-      } catch {
-        return [];
-      }
+        const { data } = await db.from('profile_permissions').select('permission').eq('perfil', key);
+        if (Array.isArray(data) && data.length) return data.map((r: any) => r.permission).filter(Boolean);
+      } catch {}
+      try {
+        const { data } = await db.from('profile_permissions').select('permission').eq('profile_name', key);
+        if (Array.isArray(data) && data.length) return data.map((r: any) => r.permission).filter(Boolean);
+      } catch {}
+      try {
+        const { data } = await db.from('profile_permissions').select('permissions ( name, permission ), permission').or(`perfil.eq.${key},profile_name.eq.${key}`);
+        if (Array.isArray(data) && data.length) return data.map((r: any) => r.permission || r?.permissions?.name || r?.permissions?.permission).filter(Boolean);
+      } catch {}
+      return [];
     }
     return [];
   }
