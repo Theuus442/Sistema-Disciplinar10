@@ -91,6 +91,40 @@ async function insertProfilePermissionFlexible(db: any, perfilKey: string, permi
   } catch (e) { lastErr = e; console.error('[profile-permissions] permission id resolution failed', e); }
   throw lastErr;
 }
+
+async function bulkUpdateProfilePermissions(db: any, perfilKey: string, permissionNames: string[]) {
+  const admin = getAdminClient();
+  const client = admin ?? db;
+  console.info('[profile-permissions] bulk update start', { perfilKey, count: permissionNames.length });
+  const { data: existingByName, error: eByName } = await client.from('permissions').select('id,name,permission').in('name', permissionNames);
+  if (eByName) throw eByName;
+  // Fallback: also try matching by permission column for any not found by name
+  const foundNames = new Set((existingByName || []).map((p: any) => p.name));
+  const remaining = permissionNames.filter((p) => !foundNames.has(p));
+  let all = existingByName || [];
+  if (remaining.length > 0) {
+    const { data: byPerm, error: eByPerm } = await client.from('permissions').select('id,name,permission').in('permission', remaining);
+    if (eByPerm) throw eByPerm;
+    all = all.concat(byPerm || []);
+  }
+  if (all.length !== permissionNames.length) {
+    console.warn('[profile-permissions] bulk permission not found', { expected: permissionNames, matched: all.map((p:any)=>p.name||p.permission) });
+    throw new Error('permission not found');
+  }
+  const ids = all.map((p: any) => p.id);
+  // Delete old relations (cover both possible column names)
+  await client.from('profile_permissions').delete().eq('perfil', perfilKey);
+  await client.from('profile_permissions').delete().eq('profile_name', perfilKey);
+  // Insert new relations with permission_id (try both possible profile columns, first one should succeed depending on schema)
+  const rowsPerfil = ids.map((id: string) => ({ perfil: perfilKey, permission_id: id }));
+  const rowsProfileName = ids.map((id: string) => ({ profile_name: perfilKey, permission_id: id }));
+  let insErr: any = null;
+  try { const { error } = await client.from('profile_permissions').insert(rowsPerfil as any); if (!error) insErr = null; else insErr = error; } catch (e) { insErr = e; }
+  if (insErr) {
+    const { error } = await client.from('profile_permissions').insert(rowsProfileName as any);
+    if (error) throw error;
+  }
+}
 async function deleteProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
   let lastErr: any = null;
   console.info('[profile-permissions] delete start', { perfilKey, permissionName });
@@ -144,7 +178,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse){
   }
 
   if (req.method === 'POST') {
-    const { perfil, permission } = req.body as any;
+    // Support bulk replacement: { profile_name: string (or perfil), permissions: string[] }
+    const body: any = req.body || {};
+    const perfilKey = body.profile_name || body.perfil || '';
+    const permsArray = Array.isArray(body.permissions) ? body.permissions : null;
+    if (perfilKey && permsArray) {
+      try {
+        await bulkUpdateProfilePermissions(ctx.admin || db, perfilKey, permsArray);
+        return res.json({ message: 'Permissões atualizadas com sucesso!' });
+      } catch (e: any) {
+        const msg = isMissingTableOrColumn(e) ? 'Tabela/coluna permissions/profile_permissions ausente.' : (e?.message || String(e));
+        return res.status(400).json({ error: msg });
+      }
+    }
+    const { perfil, permission } = body as any;
     if (!perfil || !permission) return res.status(400).json({ error: 'perfil and permission required' });
     try {
       await insertProfilePermissionFlexible(db, perfil, permission);
