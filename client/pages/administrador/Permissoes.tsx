@@ -24,11 +24,11 @@ export default function PermissoesAdminPage() {
   const { data: profileMap } = useQuery({ queryKey: ["admin-profile-permissions"], queryFn: fetchProfilePermissions });
   const { data: usuarios } = useQuery({ queryKey: ["usuarios"], queryFn: fetchUsers });
 
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   const { data: userPerms } = useQuery({
     queryKey: ["user-perms", selectedUserId],
-    queryFn: () => fetchUserPermissions(selectedUserId as string),
-    enabled: !!selectedUserId,
+    queryFn: () => fetchUserPermissions(selectedUserId),
+    enabled: selectedUserId !== "",
   });
 
   const toggleProfilePerm = useMutation({
