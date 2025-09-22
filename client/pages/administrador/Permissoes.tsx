@@ -24,11 +24,11 @@ export default function PermissoesAdminPage() {
   const { data: profileMap } = useQuery({ queryKey: ["admin-profile-permissions"], queryFn: fetchProfilePermissions });
   const { data: usuarios } = useQuery({ queryKey: ["usuarios"], queryFn: fetchUsers });
 
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   const { data: userPerms } = useQuery({
     queryKey: ["user-perms", selectedUserId],
-    queryFn: () => fetchUserPermissions(selectedUserId as string),
-    enabled: !!selectedUserId,
+    queryFn: () => fetchUserPermissions(selectedUserId),
+    enabled: selectedUserId !== "",
   });
 
   const toggleProfilePerm = useMutation({
@@ -96,7 +96,7 @@ export default function PermissoesAdminPage() {
             <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3 md:items-center">
               <Label className="text-sm">Selecione o usuário</Label>
               <div className="md:col-span-2">
-                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <Select value={selectedUserId ?? ""} onValueChange={setSelectedUserId}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Escolha um usuário" />
                   </SelectTrigger>
