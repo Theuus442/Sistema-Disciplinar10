@@ -16,9 +16,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse){
     }
   } catch {}
   return res.json([
-    'process:criar',
-    'process:ver',
-    'process:finalizar',
+    'processo:criar',
+    'processo:ver_todos',
+    'processo:editar',
     'relatorios:ver',
     'usuarios:gerenciar',
   ]);
