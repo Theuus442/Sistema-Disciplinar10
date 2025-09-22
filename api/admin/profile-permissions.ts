@@ -7,9 +7,123 @@ function getAdminClient(){ const url=sanitizeEnv(process.env.VITE_SUPABASE_URL||
 function getAnonClientWithToken(token:string){ const url=sanitizeEnv(process.env.SUPABASE_URL||(process.env as any).VITE_SUPABASE_URL); const anon=sanitizeEnv((process.env as any).SUPABASE_ANON_KEY||(process.env as any).VITE_SUPABASE_ANON_KEY); if(!url||!anon) return null as any; return createClient(url,anon,{auth:{persistSession:false},global:{headers:{Authorization:`Bearer ${token}`},fetch:createFetchWithTimeout(7000)} as any}); }
 async function ensureAdmin(req:VercelRequest,res:VercelResponse){ const auth=(req.headers?.authorization as string)||''; const token=auth.startsWith('Bearer ')?auth.slice(7):auth; if(!token) return res.status(401).json({error:'Não autorizado: token não fornecido.'}); const userClient=getAnonClientWithToken(token); if(!userClient) return res.status(500).json({error:'Configuração Supabase ausente (URL/ANON).'}); const {data:userData,error:getUserErr}=await userClient.auth.getUser(); if(getUserErr) return res.status(401).json({error:'Token inválido ou problema na autenticação.'}); const userId=(userData?.user as any)?.id ?? null; if(!userId) return res.status(401).json({error:'Token inválido.'}); const profResp=await userClient.from('profiles').select('id,perfil').eq('id',userId).maybeSingle(); if((profResp as any)?.error) return res.status(401).json({error:'Token inválido ou sem permissão para acessar perfil.'}); const perfilLower=((((profResp as any).data ?? profResp) as any)?.perfil ?? '').toLowerCase(); if(perfilLower!=='administrador') return res.status(403).json({error:'Acesso proibido: somente administradores.'}); const admin=getAdminClient(); const db=admin ?? userClient; return {admin,db} as const; }
 function isMissingTableOrColumn(err:any){ const msg=(err && (err.message||String(err)))||''; const code=String((err as any)?.code||''); return /42P01/.test(code) || /42703/.test(code) || /relation .* does not exist/i.test(msg) || /Could not find the table/i.test(msg) || /Could not find the '.*' column/i.test(msg); }
-function buildPermissionCandidates(name: string): string[]{ const c=new Set<string>(); const base=String(name||'').trim(); if(!base) return []; c.add(base); if(base.includes('process:')) c.add(base.replace('process:','processo:')); if(base.includes('processo:')) c.add(base.replace('processo:','process:')); if(/:ver$/.test(base)) c.add(base.replace(/:ver$/, ':ver_todos')); if(/:ver_todos$/.test(base)) c.add(base.replace(/:ver_todos$/, ':ver')); if(/:finalizar$/.test(base)) c.add(base.replace(/:finalizar$/, ':editar')); if(/:editar$/.test(base)) c.add(base.replace(/:editar$/, ':finalizar')); return Array.from(c); }
-async function insertProfilePermissionFlexible(db:any, perfilKey:string, permissionName:string){ let lastErr:any=null; try{ const {error}=await db.from('profile_permissions').insert({perfil:perfilKey,permission:permissionName} as any); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {error}=await db.from('profile_permissions').insert({profile_name:perfilKey,permission:permissionName} as any); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const candidates=buildPermissionCandidates(permissionName); const orParts=candidates.flatMap((n)=>[`name.eq.${n}`,`permission.eq.${n}`]).join(','); const {data}=await db.from('permissions').select('id,name,permission').or(orParts).limit(1); const permId=Array.isArray(data)&&data[0]?.id; if(!permId) throw new Error('permission not found'); try{ const {error}=await db.from('profile_permissions').insert({perfil:perfilKey,permission_id:permId} as any); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {error}=await db.from('profile_permissions').insert({profile_name:perfilKey,permission_id:permId} as any); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } }catch(e){ lastErr=e; } throw lastErr; }
-async function deleteProfilePermissionFlexible(db:any, perfilKey:string, permissionName:string){ let lastErr:any=null; try{ const {error}=await db.from('profile_permissions').delete().eq('perfil',perfilKey).eq('permission',permissionName); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {error}=await db.from('profile_permissions').delete().eq('profile_name',perfilKey).eq('permission',permissionName); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {data}=await db.from('permissions').select('id,name,permission').or(`name.eq.${permissionName},permission.eq.${permissionName}`).limit(1); const permId=Array.isArray(data) && data[0]?.id; if(!permId) throw new Error('permission not found'); try{ const {error}=await db.from('profile_permissions').delete().eq('perfil',perfilKey).eq('permission_id',permId); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } try{ const {error}=await db.from('profile_permissions').delete().eq('profile_name',perfilKey).eq('permission_id',permId); if(!error) return; lastErr=error; }catch(e){ lastErr=e; } }catch(e){ lastErr=e; } throw lastErr; }
+function buildPermissionCandidates(name: string): string[] {
+  const c = new Set<string>();
+  const base = String(name || '').trim();
+  if (!base) return [];
+  c.add(base);
+  c.add(base.toLowerCase());
+  if (base.includes('process:')) c.add(base.replace('process:', 'processo:'));
+  if (base.includes('processo:')) c.add(base.replace('processo:', 'process:'));
+  if (/:ver$/.test(base)) c.add(base.replace(/:ver$/, ':ver_todos'));
+  if (/:ver_todos$/.test(base)) c.add(base.replace(/:ver_todos$/, ':ver'));
+  if (/:finalizar$/.test(base)) c.add(base.replace(/:finalizar$/, ':editar'));
+  if (/:editar$/.test(base)) c.add(base.replace(/:editar$/, ':finalizar'));
+  return Array.from(c);
+}
+
+async function findPermissionId(db: any, permissionName: string) {
+  const candidates = buildPermissionCandidates(permissionName);
+  console.info('[profile-permissions] lookup candidates', { permissionName, candidates });
+  try {
+    const { data: byName, error: e1 } = await db.from('permissions').select('id,name,permission').in('name', candidates).limit(1);
+    if (e1) console.error('[profile-permissions] by name error', e1);
+    const id1 = Array.isArray(byName) && byName[0]?.id;
+    if (id1) {
+      console.info('[profile-permissions] matched by name', { id: id1, row: byName?.[0] });
+      return id1;
+    }
+  } catch (e) {
+    console.error('[profile-permissions] by name exception', e);
+  }
+  try {
+    const { data: byPerm, error: e2 } = await db.from('permissions').select('id,name,permission').in('permission', candidates).limit(1);
+    if (e2) console.error('[profile-permissions] by permission error', e2);
+    const id2 = Array.isArray(byPerm) && byPerm[0]?.id;
+    if (id2) {
+      console.info('[profile-permissions] matched by permission', { id: id2, row: byPerm?.[0] });
+      return id2;
+    }
+  } catch (e) {
+    console.error('[profile-permissions] by permission exception', e);
+  }
+  try {
+    const orParts = candidates.flatMap((n) => [`name.eq.${n}`, `permission.eq.${n}`]).join(',');
+    const { data } = await db.from('permissions').select('id,name,permission').or(orParts).limit(1);
+    const id3 = Array.isArray(data) && data[0]?.id;
+    console.info('[profile-permissions] fallback or result', { count: Array.isArray(data) ? data.length : 0, id3, orParts });
+    if (id3) return id3;
+  } catch (e) {
+    console.error('[profile-permissions] fallback or exception', e);
+  }
+  return null;
+}
+async function insertProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
+  let lastErr: any = null;
+  console.info('[profile-permissions] insert start', { perfilKey, permissionName });
+  try {
+    const { error } = await db.from('profile_permissions').insert({ perfil: perfilKey, permission: permissionName } as any);
+    if (!error) return;
+    lastErr = error;
+    console.warn('[profile-permissions] insert text(perfil,permission) failed', error);
+  } catch (e) { lastErr = e; console.warn('[profile-permissions] insert text(perfil,permission) exception', e); }
+  try {
+    const { error } = await db.from('profile_permissions').insert({ profile_name: perfilKey, permission: permissionName } as any);
+    if (!error) return;
+    lastErr = error;
+    console.warn('[profile-permissions] insert text(profile_name,permission) failed', error);
+  } catch (e) { lastErr = e; console.warn('[profile-permissions] insert text(profile_name,permission) exception', e); }
+  try {
+    const permId = await findPermissionId(db, permissionName);
+    if (!permId) throw new Error('permission not found');
+    try {
+      const { error } = await db.from('profile_permissions').insert({ perfil: perfilKey, permission_id: permId } as any);
+      if (!error) return;
+      lastErr = error;
+      console.warn('[profile-permissions] insert id(perfil,permission_id) failed', error);
+    } catch (e) { lastErr = e; console.warn('[profile-permissions] insert id(perfil,permission_id) exception', e); }
+    try {
+      const { error } = await db.from('profile_permissions').insert({ profile_name: perfilKey, permission_id: permId } as any);
+      if (!error) return;
+      lastErr = error;
+      console.warn('[profile-permissions] insert id(profile_name,permission_id) failed', error);
+    } catch (e) { lastErr = e; console.warn('[profile-permissions] insert id(profile_name,permission_id) exception', e); }
+  } catch (e) { lastErr = e; console.error('[profile-permissions] permission id resolution failed', e); }
+  throw lastErr;
+}
+async function deleteProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
+  let lastErr: any = null;
+  console.info('[profile-permissions] delete start', { perfilKey, permissionName });
+  try {
+    const { error } = await db.from('profile_permissions').delete().eq('perfil', perfilKey).eq('permission', permissionName);
+    if (!error) return;
+    lastErr = error;
+    console.warn('[profile-permissions] delete text(perfil,permission) failed', error);
+  } catch (e) { lastErr = e; console.warn('[profile-permissions] delete text(perfil,permission) exception', e); }
+  try {
+    const { error } = await db.from('profile_permissions').delete().eq('profile_name', perfilKey).eq('permission', permissionName);
+    if (!error) return;
+    lastErr = error;
+    console.warn('[profile-permissions] delete text(profile_name,permission) failed', error);
+  } catch (e) { lastErr = e; console.warn('[profile-permissions] delete text(profile_name,permission) exception', e); }
+  try {
+    const permId = await findPermissionId(db, permissionName);
+    if (!permId) throw new Error('permission not found');
+    try {
+      const { error } = await db.from('profile_permissions').delete().eq('perfil', perfilKey).eq('permission_id', permId);
+      if (!error) return;
+      lastErr = error;
+      console.warn('[profile-permissions] delete id(perfil,permission_id) failed', error);
+    } catch (e) { lastErr = e; console.warn('[profile-permissions] delete id(perfil,permission_id) exception', e); }
+    try {
+      const { error } = await db.from('profile_permissions').delete().eq('profile_name', perfilKey).eq('permission_id', permId);
+      if (!error) return;
+      lastErr = error;
+      console.warn('[profile-permissions] delete id(profile_name,permission_id) failed', error);
+    } catch (e) { lastErr = e; console.warn('[profile-permissions] delete id(profile_name,permission_id) exception', e); }
+  } catch (e) { lastErr = e; console.error('[profile-permissions] permission id resolution failed', e); }
+  throw lastErr;
+}
 async function readProfilePermissionsFlexible(db:any){
   try{ const {data,error}=await db.from('profile_permissions').select('perfil, permission'); if(!error && Array.isArray(data)){ const by: Record<string, string[]> = {}; for(const r of data as any[]){ const p=r.perfil||'unknown'; const perm=r.permission||''; if(!perm) continue; (by[p]=by[p]||[]).push(perm); } if(Object.keys(by).length) return by; } }catch{}
   try{ const {data,error}=await db.from('profile_permissions').select('profile_name, permission'); if(!error && Array.isArray(data)){ const by: Record<string, string[]> = {}; for(const r of data as any[]){ const p=r.profile_name||'unknown'; const perm=r.permission||''; if(!perm) continue; (by[p]=by[p]||[]).push(perm); } if(Object.keys(by).length) return by; } }catch{}
