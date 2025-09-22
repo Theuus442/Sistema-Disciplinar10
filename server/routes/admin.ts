@@ -135,6 +135,20 @@ function isMissingTableOrColumn(err: any) {
   return false;
 }
 
+function buildPermissionCandidates(name: string): string[] {
+  const c = new Set<string>();
+  const base = String(name || '').trim();
+  if (!base) return [];
+  c.add(base);
+  if (base.includes('process:')) c.add(base.replace('process:', 'processo:'));
+  if (base.includes('processo:')) c.add(base.replace('processo:', 'process:'));
+  if (/:ver$/.test(base)) c.add(base.replace(/:ver$/, ':ver_todos'));
+  if (/:ver_todos$/.test(base)) c.add(base.replace(/:ver_todos$/, ':ver'));
+  if (/:finalizar$/.test(base)) c.add(base.replace(/:finalizar$/, ':editar'));
+  if (/:editar$/.test(base)) c.add(base.replace(/:editar$/, ':finalizar'));
+  return Array.from(c);
+}
+
 async function insertProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
   // Try direct text column combinations
   let lastErr: any = null;
@@ -148,9 +162,11 @@ async function insertProfilePermissionFlexible(db: any, perfilKey: string, permi
     if (!error) return;
     lastErr = error;
   } catch (e) { lastErr = e; }
-  // Try permission_id mapping via permissions table
+  // Try permission_id mapping via permissions table with flexible name variants
   try {
-    const { data: permByName } = await db.from('permissions').select('id,name,permission').or(`name.eq.${permissionName},permission.eq.${permissionName}`).limit(1);
+    const candidates = buildPermissionCandidates(permissionName);
+    const orParts = candidates.flatMap((n) => [`name.eq.${n}`, `permission.eq.${n}`]).join(',');
+    const { data: permByName } = await db.from('permissions').select('id,name,permission').or(orParts).limit(1);
     const permId = Array.isArray(permByName) && permByName[0]?.id;
     if (!permId) throw new Error('permission not found');
     try {
@@ -180,9 +196,11 @@ async function deleteProfilePermissionFlexible(db: any, perfilKey: string, permi
     if (!error) return;
     lastErr = error;
   } catch (e) { lastErr = e; }
-  // Try via permission_id
+  // Try via permission_id with flexible name variants
   try {
-    const { data: permByName } = await db.from('permissions').select('id,name,permission').or(`name.eq.${permissionName},permission.eq.${permissionName}`).limit(1);
+    const candidates = buildPermissionCandidates(permissionName);
+    const orParts = candidates.flatMap((n) => [`name.eq.${n}`, `permission.eq.${n}`]).join(',');
+    const { data: permByName } = await db.from('permissions').select('id,name,permission').or(orParts).limit(1);
     const permId = Array.isArray(permByName) && permByName[0]?.id;
     if (!permId) throw new Error('permission not found');
     try {
@@ -484,9 +502,9 @@ export const listPermissions: RequestHandler = async (_req, res) => {
     } catch {}
 
     return res.json([
-      'process:criar',
-      'process:ver',
-      'process:finalizar',
+      'processo:criar',
+      'processo:ver_todos',
+      'processo:editar',
       'relatorios:ver',
       'usuarios:gerenciar',
     ]);

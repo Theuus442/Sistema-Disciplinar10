@@ -10,15 +10,15 @@ async function ensureAdmin(req:VercelRequest,res:VercelResponse){ const auth=(re
 export default async function handler(req: VercelRequest, res: VercelResponse){
   const ctx = await ensureAdmin(req,res) as any; if(!ctx) return; const db = ctx.db;
   try {
-    const { data, error } = await db.from('permissions').select('permission, description');
+    const { data, error } = await db.from('permissions').select('name, permission');
     if (!error && Array.isArray(data) && data.length>0) {
-      return res.json((data as any).map((d:any)=> d.permission));
+      return res.json((data as any).map((d:any)=> d.permission || d.name).filter(Boolean));
     }
   } catch {}
   return res.json([
-    'process:criar',
-    'process:ver',
-    'process:finalizar',
+    'processo:criar',
+    'processo:ver_todos',
+    'processo:editar',
     'relatorios:ver',
     'usuarios:gerenciar',
   ]);
