@@ -85,6 +85,17 @@ async function findPermissionId(db: SupabaseClient, permissionName: string) {
   return null;
 }
 
+async function ensurePermissionId(db: SupabaseClient, permissionName: string) {
+  let id = await findPermissionId(db, permissionName);
+  if (id) return id;
+  try {
+    await db.from('permissions').insert({ name: permissionName, permission: permissionName } as any);
+  } catch {}
+  id = await findPermissionId(db, permissionName);
+  if (!id) throw new Error(`permission not found: ${permissionName}`);
+  return id;
+}
+
 async function insertProfilePermissionFlexible(db: SupabaseClient, perfilKey: string, permissionName: string) {
   try {
     const { error } = await db.from('profile_permissions').insert({ perfil: perfilKey, permission: permissionName } as any);
@@ -94,8 +105,7 @@ async function insertProfilePermissionFlexible(db: SupabaseClient, perfilKey: st
     const { error } = await db.from('profile_permissions').insert({ profile_name: perfilKey, permission: permissionName } as any);
     if (!error) return;
   } catch {}
-  const permId = await findPermissionId(db, permissionName);
-  if (!permId) throw new Error(`permission not found: ${permissionName}`);
+  const permId = await ensurePermissionId(db, permissionName);
   try {
     const { error } = await db.from('profile_permissions').insert({ perfil: perfilKey, permission_id: permId } as any);
     if (!error) return;
@@ -200,12 +210,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await db.from('profile_permissions').delete().eq('perfil', profile_name);
         return res.status(200).json({ message: 'Permissões limpas com sucesso.' });
       }
-      const { data: permissionsFromDb, error: findError } = await db
+      let { data: permissionsFromDb, error: findError } = await db
         .from('permissions')
         .select('id, name, permission')
         .in('name', permissionsFromFrontend);
       if (findError) return res.status(500).json({ error: 'Falha ao validar permissões.' });
-      const foundNames = (permissionsFromDb || []).map((p: any) => p.name || p.permission).filter(Boolean);
+      let foundNames = (permissionsFromDb || []).map((p: any) => p.name || p.permission).filter(Boolean);
+      const missing = permissionsFromFrontend.filter((p) => !foundNames.includes(p));
+      if (missing.length) {
+        // seed missing
+        for (const m of missing) {
+          try { await db.from('permissions').insert({ name: m, permission: m } as any); } catch {}
+        }
+        // re-fetch
+        const ref = await db.from('permissions').select('id, name, permission').in('name', permissionsFromFrontend);
+        permissionsFromDb = ref.data as any;
+        foundNames = (permissionsFromDb || []).map((p: any) => p.name || p.permission).filter(Boolean);
+      }
       if (foundNames.length !== permissionsFromFrontend.length) {
         const missingPermission = permissionsFromFrontend.find((p) => !foundNames.includes(p));
         return res.status(400).json({ error: `permission not found: ${missingPermission}` });
