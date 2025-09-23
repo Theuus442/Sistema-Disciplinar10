@@ -187,6 +187,18 @@ async function findPermissionId(db: any, permissionName: string) {
   return null;
 }
 
+async function ensurePermissionId(db: any, permissionName: string) {
+  let id = await findPermissionId(db, permissionName);
+  if (id) return id;
+  try {
+    // Try to create the permission if it doesn't exist yet
+    await db.from('permissions').insert({ name: permissionName, permission: permissionName } as any);
+  } catch {}
+  id = await findPermissionId(db, permissionName);
+  if (!id) throw new Error(`permission not found: ${permissionName}`);
+  return id;
+}
+
 async function insertProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
   let lastErr: any = null;
   console.info('[profile-permissions] insert start', { perfilKey, permissionName });
@@ -203,8 +215,7 @@ async function insertProfilePermissionFlexible(db: any, perfilKey: string, permi
     console.warn('[profile-permissions] insert text(profile_name,permission) failed', error);
   } catch (e) { lastErr = e; console.warn('[profile-permissions] insert text(profile_name,permission) exception', e); }
   try {
-    const permId = await findPermissionId(db, permissionName);
-    if (!permId) throw new Error('permission not found');
+    const permId = await ensurePermissionId(db, permissionName);
     try {
       const { error } = await db.from('profile_permissions').insert({ perfil: perfilKey, permission_id: permId } as any);
       if (!error) return;
