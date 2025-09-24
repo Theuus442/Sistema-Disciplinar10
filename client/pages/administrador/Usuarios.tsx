@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile, type PerfilUsuario, authHeaders } from "@/lib/api";
+import { updateProfile, type PerfilUsuario, authHeaders, fetchAvailablePermissions, fetchProfilePermissions, fetchUserOverrides, saveUserOverrides, type UserOverride } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { errorMessage } from "@/lib/utils";
 
