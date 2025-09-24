@@ -26,6 +26,7 @@ export default function UsuariosAdminPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [abrirNovo, setAbrirNovo] = useState(false);
   const [novo, setNovo] = useState<{ nome: string; email: string; password: string; perfil: PerfilUsuario; ativo: boolean; nomeCompleto?: string; matricula?: string; cargo?: string; setor?: string; gestorId?: string }>({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
+  const [novoOverrideMap, setNovoOverrideMap] = useState<Record<string, "default" | "grant" | "revoke">>({});
 
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
