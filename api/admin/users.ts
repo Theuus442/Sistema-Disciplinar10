@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 function sanitizeEnv(v?: string | null) {
@@ -46,7 +45,7 @@ function getAnonClientWithToken(token: string) {
   }
 }
 
-async function ensureAdmin(req: VercelRequest, res: VercelResponse) {
+async function ensureAdmin(req: any, res: any) {
   const auth = (req.headers?.authorization as string) || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
   if (!token) {
@@ -99,7 +98,7 @@ async function ensureAdmin(req: VercelRequest, res: VercelResponse) {
   return { admin, db, userId };
 }
 
-async function handleGet(req: VercelRequest, res: VercelResponse) {
+async function handleGet(req: any, res: any) {
   const ctx = await ensureAdmin(req, res);
   if (!ctx) return;
   const db = ctx.db;
@@ -155,7 +154,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
   return res.json(normalized);
 }
 
-async function handlePost(req: VercelRequest, res: VercelResponse) {
+async function handlePost(req: any, res: any) {
   const { nome, email, password, perfil, ativo, employee } = req.body as any;
   if (!nome || !email || !password || !perfil) {
     return res.status(400).json({ error: 'Campos obrigatórios: nome, email, password, perfil' });
@@ -195,7 +194,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
   return res.json({ id: user.id, nome, email, perfil, ativo, criadoEm: new Date().toISOString() });
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method === 'GET') return handleGet(req, res);
   if (req.method === 'POST') return handlePost(req, res);
   res.setHeader('Allow', 'GET, POST');
