@@ -96,7 +96,7 @@ export default function SidebarAdministrador({ onSair }: SidebarAdministradorPro
         </div>
         {/* Menu de Navegação */}
         <div className="mb-auto space-y-1 p-2">
-          {menuItems.map((item) => (
+          {menuItems.filter((i)=>i.id!=="permissoes").map((item) => (
             <button
               key={item.id}
               onClick={() => {
@@ -104,7 +104,6 @@ export default function SidebarAdministrador({ onSair }: SidebarAdministradorPro
                 if (item.id === "dashboard") navigate("/administrador");
                 if (item.id === "gerenciamento-usuarios") navigate("/administrador/usuarios");
                 if (item.id === "configuracoes-sistema") navigate("/administrador/configuracoes");
-                if (item.id === "permissoes") navigate("/administrador/permissoes");
               }}
               className={`flex w-full items-center space-x-3 rounded-md px-2 py-2.5 text-left font-roboto text-sm font-medium transition-colors ${
                 activeItem === item.id
