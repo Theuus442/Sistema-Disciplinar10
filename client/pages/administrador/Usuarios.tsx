@@ -31,6 +31,31 @@ export default function UsuariosAdminPage() {
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
   const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
 
+  const [allPerms, setAllPerms] = useState<string[]>([]);
+  const [profilePerms, setProfilePerms] = useState<Record<string, string[]>>({});
+  const [overrideMap, setOverrideMap] = useState<Record<string, "default" | "grant" | "revoke">>({});
+
+  useEffect(() => {
+    if (!abrirEditar || !alvoEdicao) return;
+    (async () => {
+      try {
+        const [perms, profMap, userOv] = await Promise.all([
+          fetchAvailablePermissions().catch(() => []),
+          fetchProfilePermissions().catch(() => ({} as any)),
+          fetchUserOverrides(alvoEdicao.id).catch(() => []),
+        ]);
+        setAllPerms(perms);
+        setProfilePerms(profMap);
+        const ov: Record<string, "default" | "grant" | "revoke"> = {};
+        for (const p of perms) ov[p] = "default";
+        for (const o of userOv as UserOverride[]) {
+          if (o?.permission_name && (o.action === "grant" || o.action === "revoke")) ov[o.permission_name] = o.action;
+        }
+        setOverrideMap(ov);
+      } catch {}
+    })();
+  }, [abrirEditar, alvoEdicao]);
+
   const carregarUsuarios = async () => {
     const res = await fetch("/api/admin/users", { headers: await authHeaders() });
     if (!res.ok) {
