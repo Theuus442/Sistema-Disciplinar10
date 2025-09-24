@@ -57,6 +57,23 @@ export default function UsuariosAdminPage() {
     })();
   }, [abrirEditar, alvoEdicao]);
 
+  useEffect(() => {
+    if (!abrirNovo) return;
+    (async () => {
+      try {
+        const [perms, profMap] = await Promise.all([
+          fetchAvailablePermissions().catch(() => []),
+          fetchProfilePermissions().catch(() => ({} as any)),
+        ]);
+        setAllPerms(perms);
+        setProfilePerms(profMap);
+        const ov: Record<string, "default" | "grant" | "revoke"> = {};
+        for (const p of perms) ov[p] = "default";
+        setNovoOverrideMap(ov);
+      } catch {}
+    })();
+  }, [abrirNovo]);
+
   const carregarUsuarios = async () => {
     const res = await fetch("/api/admin/users", { headers: await authHeaders() });
     if (!res.ok) {
