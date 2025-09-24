@@ -713,6 +713,121 @@ export const removeUserPermission: RequestHandler = async (req, res) => {
   }
 };
 
+// ------------------------- User overrides (grant/revoke) -------------------------
+
+type UserOverride = { permission_name: string; action: 'grant' | 'revoke' };
+
+async function selectUserOverridesFlexible(db: any, userId: string): Promise<UserOverride[]> {
+  const trySelects = [
+    async () => db.from('user_permission_overrides').select('permission_name, action').eq('user_id', userId),
+    async () => db.from('user_permission_overrides').select('permission, action').eq('user_id', userId),
+    async () => db.from('user_overrides').select('permission_name, action').eq('user_id', userId),
+    async () => db.from('user_overrides').select('permission, action').eq('user_id', userId),
+  ];
+  for (const fn of trySelects) {
+    try {
+      const { data, error } = await fn();
+      if (!error && Array.isArray(data)) {
+        return (data as any[]).map((r: any) => ({
+          permission_name: r.permission_name || r.permission,
+          action: (r.action || '').toLowerCase() === 'revoke' ? 'revoke' : 'grant',
+        })).filter((r) => r.permission_name);
+      }
+    } catch {}
+  }
+  try {
+    const perms = await getUserPerms(db, userId);
+    return perms.map((p: string) => ({ permission_name: p, action: 'grant' as const }));
+  } catch {
+    return [];
+  }
+}
+
+async function replaceUserOverridesFlexible(db: any, userId: string, overrides: UserOverride[]): Promise<{ ok: boolean; fallback?: boolean; message?: string }>{
+  const rowsA = overrides.map((o) => ({ user_id: userId, permission_name: o.permission_name, action: o.action }));
+  const rowsB = overrides.map((o) => ({ user_id: userId, permission: o.permission_name, action: o.action }));
+  const attempts = [
+    async () => {
+      await db.from('user_permission_overrides').delete().eq('user_id', userId);
+      const { error } = await db.from('user_permission_overrides').insert(rowsA as any);
+      if (error) throw error;
+    },
+    async () => {
+      await db.from('user_permission_overrides').delete().eq('user_id', userId);
+      const { error } = await db.from('user_permission_overrides').insert(rowsB as any);
+      if (error) throw error;
+    },
+    async () => {
+      await db.from('user_overrides').delete().eq('user_id', userId);
+      const { error } = await db.from('user_overrides').insert(rowsA as any);
+      if (error) throw error;
+    },
+    async () => {
+      await db.from('user_overrides').delete().eq('user_id', userId);
+      const { error } = await db.from('user_overrides').insert(rowsB as any);
+      if (error) throw error;
+    },
+  ];
+  for (const fn of attempts) {
+    try { await fn(); return { ok: true }; } catch {}
+  }
+
+  try {
+    const grants = overrides.filter((o) => o.action === 'grant').map((o) => o.permission_name);
+    const revokes = overrides.filter((o) => o.action === 'revoke').map((o) => o.permission_name);
+    for (const p of grants) {
+      try { await db.from('user_permissions').insert({ user_id: userId, permission: p } as any); } catch (e: any) {
+        if (isMissingTableOrColumn(e)) { await insertProfilePermissionFlexible(db, `user:${userId}`, p); }
+      }
+    }
+    for (const p of revokes) {
+      try { await db.from('user_permissions').delete().eq('user_id', userId).eq('permission', p); } catch (e: any) {
+        if (isMissingTableOrColumn(e)) { await deleteProfilePermissionFlexible(db, `user:${userId}`, p); }
+      }
+    }
+    return { ok: true, fallback: true, message: 'Revogações podem não ser aplicadas sem a tabela user_permission_overrides.' };
+  } catch (e: any) {
+    return { ok: false, message: e?.message || String(e) };
+  }
+}
+
+export const getUserOverrides: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+    const userId = String(req.params.userId || '').trim();
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const list = await selectUserOverridesFlexible(db, userId);
+    return res.json(list);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
+export const saveUserOverrides: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+    const userId = String(req.params.userId || '').trim();
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const body = (req.body as any) || {};
+    const overrides = Array.isArray(body?.overrides) ? body.overrides as UserOverride[] : [];
+    for (const o of overrides) {
+      if (!o?.permission_name || (o.action !== 'grant' && o.action !== 'revoke')) {
+        return res.status(400).json({ error: 'Invalid override item' });
+      }
+    }
+    const result = await replaceUserOverridesFlexible(db, userId, overrides);
+    if (!result.ok) return res.status(500).json({ error: result.message || 'Falha ao salvar overrides' });
+    if (result.fallback && result.message) return res.status(200).json({ ok: true, warning: result.message });
+    return res.json({ ok: true });
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
 // ------------------------- Import employees (CSV) -------------------------
 
 function parseCsvToObjects(csvText: string) {

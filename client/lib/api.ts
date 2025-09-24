@@ -196,6 +196,8 @@ async function api<T = any>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+export type UserOverride = { permission_name: string; action: "grant" | "revoke" };
+
 export async function fetchAvailablePermissions(): Promise<string[]> {
   return api<string[]>("/api/admin/permissions");
 }
@@ -226,4 +228,20 @@ export async function setUserPermission(userId: string, permission: string, enab
   } else {
     await api("/api/admin/user-permissions", { method: "DELETE", body: JSON.stringify({ userId, permission }) });
   }
+}
+
+export async function fetchUserOverrides(userId: string): Promise<UserOverride[]> {
+  if (!userId) return [];
+  try {
+    return await api<UserOverride[]>(`/api/admin/user-overrides/${encodeURIComponent(userId)}`);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveUserOverrides(userId: string, overrides: UserOverride[]): Promise<void> {
+  await api(`/api/admin/user-overrides/${encodeURIComponent(userId)}`, {
+    method: "POST",
+    body: JSON.stringify({ overrides }),
+  });
 }

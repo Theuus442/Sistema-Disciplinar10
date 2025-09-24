@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile, type PerfilUsuario, authHeaders } from "@/lib/api";
+import { updateProfile, type PerfilUsuario, authHeaders, fetchAvailablePermissions, fetchProfilePermissions, fetchUserOverrides, saveUserOverrides, type UserOverride } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { errorMessage } from "@/lib/utils";
 
@@ -25,10 +26,53 @@ export default function UsuariosAdminPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [abrirNovo, setAbrirNovo] = useState(false);
   const [novo, setNovo] = useState<{ nome: string; email: string; password: string; perfil: PerfilUsuario; ativo: boolean; nomeCompleto?: string; matricula?: string; cargo?: string; setor?: string; gestorId?: string }>({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true });
+  const [novoOverrideMap, setNovoOverrideMap] = useState<Record<string, "default" | "grant" | "revoke">>({});
 
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [alvoEdicao, setAlvoEdicao] = useState<Usuario | null>(null);
   const [edicao, setEdicao] = useState<{ nome: string; email: string; perfil: PerfilUsuario; ativo: boolean }>({ nome: "", email: "", perfil: "funcionario", ativo: true });
+
+  const [allPerms, setAllPerms] = useState<string[]>([]);
+  const [profilePerms, setProfilePerms] = useState<Record<string, string[]>>({});
+  const [overrideMap, setOverrideMap] = useState<Record<string, "default" | "grant" | "revoke">>({});
+
+  useEffect(() => {
+    if (!abrirEditar || !alvoEdicao) return;
+    (async () => {
+      try {
+        const [perms, profMap, userOv] = await Promise.all([
+          fetchAvailablePermissions().catch(() => []),
+          fetchProfilePermissions().catch(() => ({} as any)),
+          fetchUserOverrides(alvoEdicao.id).catch(() => []),
+        ]);
+        setAllPerms(perms);
+        setProfilePerms(profMap);
+        const ov: Record<string, "default" | "grant" | "revoke"> = {};
+        for (const p of perms) ov[p] = "default";
+        for (const o of userOv as UserOverride[]) {
+          if (o?.permission_name && (o.action === "grant" || o.action === "revoke")) ov[o.permission_name] = o.action;
+        }
+        setOverrideMap(ov);
+      } catch {}
+    })();
+  }, [abrirEditar, alvoEdicao]);
+
+  useEffect(() => {
+    if (!abrirNovo) return;
+    (async () => {
+      try {
+        const [perms, profMap] = await Promise.all([
+          fetchAvailablePermissions().catch(() => []),
+          fetchProfilePermissions().catch(() => ({} as any)),
+        ]);
+        setAllPerms(perms);
+        setProfilePerms(profMap);
+        const ov: Record<string, "default" | "grant" | "revoke"> = {};
+        for (const p of perms) ov[p] = "default";
+        setNovoOverrideMap(ov);
+      } catch {}
+    })();
+  }, [abrirNovo]);
 
   const carregarUsuarios = async () => {
     const res = await fetch("/api/admin/users", { headers: await authHeaders() });
@@ -125,9 +169,18 @@ export default function UsuariosAdminPage() {
       }
 
       const data = payload ?? {};
+      try {
+        const overrides: UserOverride[] = Object.entries(novoOverrideMap)
+          .filter(([_, v]) => v === "grant" || v === "revoke")
+          .map(([permission_name, v]) => ({ permission_name, action: v as any }));
+        if (data?.id) await saveUserOverrides(data.id, overrides);
+      } catch (e: any) {
+        toast({ title: "Aviso ao salvar exceções", description: errorMessage(e) });
+      }
       await carregarUsuarios();
       setAbrirNovo(false);
       setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true, nomeCompleto: "", matricula: "", cargo: "", setor: "", gestorId: "" });
+      setNovoOverrideMap({});
       toast({ title: "Usuário criado", description: `${data.nome} (${data.perfil})` });
     } catch (e: any) {
       toast({ title: "Erro ao criar usuário", description: errorMessage(e) });
@@ -150,6 +203,14 @@ export default function UsuariosAdminPage() {
     setUsuarios((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
     try {
       await updateProfile(id, patch);
+      const overrides: UserOverride[] = Object.entries(overrideMap)
+        .filter(([_, v]) => v === "grant" || v === "revoke")
+        .map(([permission_name, v]) => ({ permission_name, action: v as any }));
+      try {
+        await saveUserOverrides(id, overrides);
+      } catch (e: any) {
+        toast({ title: "Aviso ao salvar exceções", description: errorMessage(e) });
+      }
       setAbrirEditar(false);
       toast({ title: "Usuário atualizado", description: edicao.nome });
     } catch (e: any) {
@@ -245,6 +306,41 @@ export default function UsuariosAdminPage() {
                         <Label>Ativo</Label>
                         <Switch checked={novo.ativo} onCheckedChange={(v) => setNovo({ ...novo, ativo: v })} />
                       </div>
+
+                      <div className="mt-6 rounded-md border p-3">
+                        <div className="mb-2 font-medium">Permissões herdadas do perfil</div>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {allPerms.map((perm) => {
+                            const inherited = (profilePerms[novo.perfil] || []).includes(perm);
+                            return (
+                              <label key={perm} className="flex items-center gap-2 text-sm">
+                                <input type="checkbox" checked={inherited} readOnly disabled />
+                                <span>{perm}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-md border p-3">
+                        <div className="mb-2 font-medium">Permissões individuais (exceções)</div>
+                        <div className="space-y-2">
+                          {allPerms.map((perm) => (
+                            <div key={perm} className="flex items-center justify-between gap-4">
+                              <span className="text-sm">{perm}</span>
+                              <RadioGroup
+                                className="grid grid-cols-3 gap-3"
+                                value={novoOverrideMap[perm] ?? "default"}
+                                onValueChange={(v) => setNovoOverrideMap((m) => ({ ...m, [perm]: (v as any) }))}
+                              >
+                                <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="default" />Padrão</label>
+                                <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="grant" />Conceder</label>
+                                <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="revoke" />Revogar</label>
+                              </RadioGroup>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setAbrirNovo(false)}>Cancelar</Button>
@@ -323,6 +419,41 @@ export default function UsuariosAdminPage() {
                   <div className="flex items-center justify-between">
                     <Label>Ativo</Label>
                     <Switch checked={edicao.ativo} onCheckedChange={(v) => setEdicao({ ...edicao, ativo: v })} />
+                  </div>
+
+                  <div className="mt-6 rounded-md border p-3">
+                    <div className="mb-2 font-medium">Permissões herdadas do perfil</div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {allPerms.map((perm) => {
+                        const inherited = (profilePerms[edicao.perfil] || []).includes(perm);
+                        return (
+                          <label key={perm} className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" checked={inherited} readOnly disabled />
+                            <span>{perm}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-md border p-3">
+                    <div className="mb-2 font-medium">Permissões individuais (exceções)</div>
+                    <div className="space-y-2">
+                      {allPerms.map((perm) => (
+                        <div key={perm} className="flex items-center justify-between gap-4">
+                          <span className="text-sm">{perm}</span>
+                          <RadioGroup
+                            className="grid grid-cols-3 gap-3"
+                            value={overrideMap[perm] ?? "default"}
+                            onValueChange={(v) => setOverrideMap((m) => ({ ...m, [perm]: (v as any) }))}
+                          >
+                            <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="default" />Padrão</label>
+                            <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="grant" />Conceder</label>
+                            <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="revoke" />Revogar</label>
+                          </RadioGroup>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
