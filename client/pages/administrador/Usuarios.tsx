@@ -350,6 +350,41 @@ export default function UsuariosAdminPage() {
                     <Label>Ativo</Label>
                     <Switch checked={edicao.ativo} onCheckedChange={(v) => setEdicao({ ...edicao, ativo: v })} />
                   </div>
+
+                  <div className="mt-6 rounded-md border p-3">
+                    <div className="mb-2 font-medium">Permissões herdadas do perfil</div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {allPerms.map((perm) => {
+                        const inherited = (profilePerms[edicao.perfil] || []).includes(perm);
+                        return (
+                          <label key={perm} className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" checked={inherited} readOnly disabled />
+                            <span>{perm}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-md border p-3">
+                    <div className="mb-2 font-medium">Permissões individuais (exceções)</div>
+                    <div className="space-y-2">
+                      {allPerms.map((perm) => (
+                        <div key={perm} className="flex items-center justify-between gap-4">
+                          <span className="text-sm">{perm}</span>
+                          <RadioGroup
+                            className="grid grid-cols-3 gap-3"
+                            value={overrideMap[perm] ?? "default"}
+                            onValueChange={(v) => setOverrideMap((m) => ({ ...m, [perm]: (v as any) }))}
+                          >
+                            <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="default" />Padrão</label>
+                            <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="grant" />Conceder</label>
+                            <label className="flex items-center gap-2 text-xs"><RadioGroupItem value="revoke" />Revogar</label>
+                          </RadioGroup>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setAbrirEditar(false)}>Cancelar</Button>
