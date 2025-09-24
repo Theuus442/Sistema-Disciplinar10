@@ -169,9 +169,18 @@ export default function UsuariosAdminPage() {
       }
 
       const data = payload ?? {};
+      try {
+        const overrides: UserOverride[] = Object.entries(novoOverrideMap)
+          .filter(([_, v]) => v === "grant" || v === "revoke")
+          .map(([permission_name, v]) => ({ permission_name, action: v as any }));
+        if (data?.id) await saveUserOverrides(data.id, overrides);
+      } catch (e: any) {
+        toast({ title: "Aviso ao salvar exceções", description: errorMessage(e) });
+      }
       await carregarUsuarios();
       setAbrirNovo(false);
       setNovo({ nome: "", email: "", password: "", perfil: "funcionario", ativo: true, nomeCompleto: "", matricula: "", cargo: "", setor: "", gestorId: "" });
+      setNovoOverrideMap({});
       toast({ title: "Usuário criado", description: `${data.nome} (${data.perfil})` });
     } catch (e: any) {
       toast({ title: "Erro ao criar usuário", description: errorMessage(e) });
