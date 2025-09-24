@@ -176,6 +176,14 @@ export default function UsuariosAdminPage() {
     setUsuarios((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
     try {
       await updateProfile(id, patch);
+      const overrides: UserOverride[] = Object.entries(overrideMap)
+        .filter(([_, v]) => v === "grant" || v === "revoke")
+        .map(([permission_name, v]) => ({ permission_name, action: v as any }));
+      try {
+        await saveUserOverrides(id, overrides);
+      } catch (e: any) {
+        toast({ title: "Aviso ao salvar exceções", description: errorMessage(e) });
+      }
       setAbrirEditar(false);
       toast({ title: "Usuário atualizado", description: edicao.nome });
     } catch (e: any) {
