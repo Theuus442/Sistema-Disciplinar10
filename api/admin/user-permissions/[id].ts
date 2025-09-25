@@ -89,7 +89,7 @@ async function getUserPerms(db: any, userId: string): Promise<string[]> {
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   const ctx = (await ensureAdmin(req, res)) as any;
   if (!ctx) return;
   const db = ctx.db;
