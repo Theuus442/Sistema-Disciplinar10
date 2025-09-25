@@ -3,8 +3,7 @@
   "outputDirectory": "dist/spa",
   "regions": ["gru1"],
   "functions": {
-    "api/**": { "maxDuration": 60, "includeFiles": "dist/server/**" },
-    "api/index.ts": { "maxDuration": 60, "includeFiles": "dist/server/**" }
+    "api/**": { "maxDuration": 60, "includeFiles": "dist/server/**" }
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api" },
