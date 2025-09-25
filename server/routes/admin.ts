@@ -335,7 +335,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
     const emailById = new Map<string, string>();
     if (ctx.admin) {
       try {
-        const { data: usersPage } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 200 } as any);
+        const { data: usersPage } = await (ctx.admin as any).auth?.admin.listUsers({ page: 1, perPage: 200 } as any);
         const users = (usersPage as any)?.users || [];
         for (const u of users) if (u?.id && u?.email) emailById.set(u.id, u.email);
       } catch {}
@@ -444,7 +444,7 @@ export const listRecentLogins: RequestHandler = async (_req, res) => {
     let lastById = new Map<string, string | null>();
     if (ctx.admin) {
       try {
-        const { data: usersResp } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 200 } as any);
+        const { data: usersResp } = await (ctx.admin as any).auth?.admin.listUsers({ page: 1, perPage: 200 } as any);
         const users = (usersResp as any)?.users || [];
         for (const u of users) {
           const last = u?.last_sign_in_at || u?.created_at || null;
