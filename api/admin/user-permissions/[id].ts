@@ -37,7 +37,7 @@ function getAnonClientWithToken(token: string) {
   });
 }
 
-async function ensureAdmin(req: VercelRequest, res: VercelResponse) {
+async function ensureAdmin(req: any, res: any) {
   const auth = (req.headers?.authorization as string) || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
   if (!token) return res.status(401).json({ error: 'Não autorizado: token não fornecido.' });
