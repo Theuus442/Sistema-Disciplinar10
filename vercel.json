@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/spa",
   "regions": ["gru1"],
