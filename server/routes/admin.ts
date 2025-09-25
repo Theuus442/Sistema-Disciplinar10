@@ -394,7 +394,7 @@ export const createUserAndProfile: RequestHandler = async (req, res) => {
     const admin = ctx.admin;
     if (!admin) return res.status(501).json({ error: "Operação administrativa requer SUPABASE_SERVICE_ROLE_KEY no servidor" });
 
-    const { data: created, error: createErr } = await (admin as any).auth.admin.createUser({
+    const { data: created, error: createErr } = await (admin.auth as any).admin.createUser({
       email,
       password,
       email_confirm: true,
