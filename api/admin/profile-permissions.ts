@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 function sanitizeEnv(v?: string | null) {
   if (!v) return undefined as any;
@@ -7,14 +7,14 @@ function sanitizeEnv(v?: string | null) {
   return t;
 }
 
-function getAdminClient(): SupabaseClient | null {
+function getAdminClient(): any | null {
   const url = sanitizeEnv(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
   const serviceKey = sanitizeEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!url || !serviceKey) return null;
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
-function getAnonClientWithToken(token: string): SupabaseClient | null {
+function getAnonClientWithToken(token: string): any | null {
   const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
   const anon = sanitizeEnv((process.env as any).SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY);
   if (!url || !anon) return null;
@@ -63,7 +63,7 @@ function buildPermissionCandidates(name: string): string[] {
   return Array.from(c);
 }
 
-async function findPermissionId(db: SupabaseClient, permissionName: string) {
+async function findPermissionId(db: any, permissionName: string) {
   const candidates = buildPermissionCandidates(permissionName);
   try {
     const { data } = await db.from('permissions').select('id').in('name', candidates).limit(1);
@@ -84,7 +84,7 @@ async function findPermissionId(db: SupabaseClient, permissionName: string) {
   return null;
 }
 
-async function ensurePermissionId(db: SupabaseClient, permissionName: string) {
+async function ensurePermissionId(db: any, permissionName: string) {
   let id = await findPermissionId(db, permissionName);
   if (id) return id;
   try {
@@ -95,7 +95,7 @@ async function ensurePermissionId(db: SupabaseClient, permissionName: string) {
   return id;
 }
 
-async function insertProfilePermissionFlexible(db: SupabaseClient, perfilKey: string, permissionName: string) {
+async function insertProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
   try {
     const { error } = await db.from('profile_permissions').insert({ perfil: perfilKey, permission: permissionName } as any);
     if (!error) return;
@@ -113,7 +113,7 @@ async function insertProfilePermissionFlexible(db: SupabaseClient, perfilKey: st
   if (e2) throw e2;
 }
 
-async function deleteProfilePermissionFlexible(db: SupabaseClient, perfilKey: string, permissionName: string) {
+async function deleteProfilePermissionFlexible(db: any, perfilKey: string, permissionName: string) {
   try {
     const { error } = await db.from('profile_permissions').delete().eq('perfil', perfilKey).eq('permission', permissionName);
     if (!error) return;
@@ -132,7 +132,7 @@ async function deleteProfilePermissionFlexible(db: SupabaseClient, perfilKey: st
   if (e2) throw e2;
 }
 
-async function readProfilePermissionsFlexible(db: SupabaseClient): Promise<Record<string, string[]>> {
+async function readProfilePermissionsFlexible(db: any): Promise<Record<string, string[]>> {
   try {
     const { data, error } = await db.from('profile_permissions').select('perfil, permission');
     if (!error && Array.isArray(data)) {

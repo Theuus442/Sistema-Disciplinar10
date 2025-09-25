@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 function sanitizeEnv(v?: string | null) {
@@ -38,7 +37,7 @@ function getAnonClientWithToken(token: string) {
   });
 }
 
-async function ensureAdmin(req: VercelRequest, res: VercelResponse) {
+async function ensureAdmin(req: any, res: any) {
   const auth = (req.headers?.authorization as string) || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
   if (!token) return res.status(401).json({ error: 'Não autorizado: token não fornecido.' });
@@ -90,7 +89,7 @@ async function getUserPerms(db: any, userId: string): Promise<string[]> {
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   const ctx = (await ensureAdmin(req, res)) as any;
   if (!ctx) return;
   const db = ctx.db;

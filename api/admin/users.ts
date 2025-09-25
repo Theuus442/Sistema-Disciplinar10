@@ -113,7 +113,7 @@ async function handleGet(req: any, res: any) {
   const emailById = new Map<string, string>();
   if (ctx.admin) {
     try {
-      const { data: usersPage } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 200 } as any);
+      const { data: usersPage } = await (ctx.admin as any).auth?.admin.listUsers({ page: 1, perPage: 200 } as any);
       const users = (usersPage as any)?.users || [];
       for (const u of users) if (u?.id && u?.email) emailById.set(u.id, u.email);
     } catch {}
