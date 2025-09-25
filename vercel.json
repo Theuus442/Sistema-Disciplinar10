@@ -6,7 +6,7 @@
   "functions": {
     "api/**": {
       "maxDuration": 60,
-      "includeFiles": "server/**"
+      "includeFiles": "dist/server/**"
     }
   },
   "rewrites": [
