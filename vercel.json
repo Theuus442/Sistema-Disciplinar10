@@ -1,15 +1,16 @@
 {
+  "version": 2,
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/spa",
   "regions": ["gru1"],
   "functions": {
-    "api/**": { "maxDuration": 60, "includeFiles": "dist/server/**" }
+    "api/**": {
+      "maxDuration": 60,
+      "includeFiles": "dist/server/**"
+    }
   },
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api" },
-    { "src": "/assets/(.*)", "dest": "/assets/$1" },
-    { "src": "/favicon.ico", "dest": "/favicon.ico" },
-    { "src": "/robots.txt", "dest": "/robots.txt" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/((?!api).*)", "destination": "/index.html" }
   ]
 }
