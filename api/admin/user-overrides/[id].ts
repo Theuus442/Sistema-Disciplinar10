@@ -8,7 +8,7 @@ async function ensureAdmin(req:any,res:any){ const auth=(req.headers?.authorizat
 
 function isMissingTableOrColumn(err:any){ const msg=(err && (err.message||String(err)))||''; const code=String((err as any)?.code||''); return /42P01/.test(code)||/42703/.test(code)||/relation .* does not exist/i.test(msg)||/Could not find the table/i.test(msg)||/Could not find the '.*' column/i.test(msg); }
 
-export default async function handler(req: VercelRequest, res: VercelResponse){
+export default async function handler(req: any, res: any){
   const ctx = await ensureAdmin(req,res) as any; if(!ctx) return; const db = ctx.db;
   if (req.method !== 'GET') { res.setHeader('Allow','GET'); return res.status(405).json({error:'Method Not Allowed'}); }
   const idParam = (req.query as any)?.id; const userId = Array.isArray(idParam) ? idParam[0] : idParam; if(!userId) return res.status(400).json({error:'userId requerido'});
