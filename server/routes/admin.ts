@@ -335,6 +335,7 @@ export const listProfiles: RequestHandler = async (_req, res) => {
     const emailById = new Map<string, string>();
     if (ctx.admin) {
       try {
+        // @ts-ignore - Supabase types may not expose admin on auth client in this environment
         const { data: usersPage } = await (ctx.admin as any).auth?.admin.listUsers({ page: 1, perPage: 200 } as any);
         const users = (usersPage as any)?.users || [];
         for (const u of users) if (u?.id && u?.email) emailById.set(u.id, u.email);
@@ -394,6 +395,7 @@ export const createUserAndProfile: RequestHandler = async (req, res) => {
     const admin = ctx.admin;
     if (!admin) return res.status(501).json({ error: "Operação administrativa requer SUPABASE_SERVICE_ROLE_KEY no servidor" });
 
+    // @ts-ignore - Supabase types may not expose admin on auth client in this environment
     const { data: created, error: createErr } = await (admin.auth as any).admin.createUser({
       email,
       password,
