@@ -5,21 +5,18 @@ import { fileURLToPath, pathToFileURL } from "url";
 async function loadCreateServer(): Promise<() => any> {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const candidates = [
-    path.join(__dirname, "../dist/server/server.mjs"),
-    path.join(__dirname, "../../dist/server/server.mjs"),
-    path.join(__dirname, "dist/server/server.mjs"),
-    path.join(path.resolve(__dirname, ".."), "dist/server/server.mjs"),
-    path.join(process.cwd(), "dist/server/server.mjs"),
-    process.env.LAMBDA_TASK_ROOT ? path.join(process.env.LAMBDA_TASK_ROOT, "dist/server/server.mjs") : "",
-    path.join("/var/task", "dist/server/server.mjs"),
-  ].filter((p): p is string => !!p);
+    path.join(__dirname, "../server/index.js"),
+    path.join(__dirname, "../server/index.mjs"),
+    path.join(__dirname, "../../server/index.js"),
+    path.join(process.cwd(), "server/index.js"),
+  ];
   for (const p of candidates) {
     try {
       const mod = await import(pathToFileURL(p).href);
       if (mod && typeof mod.createServer === "function") return mod.createServer as any;
     } catch {}
   }
-  throw new Error("dist/server/server.mjs not found in function bundle. Ensure buildCommand 'pnpm build' runs and vercel.json includes includeFiles: 'dist/server/**'.");
+  throw new Error("server/index.js not found in function bundle. Ensure the 'server' directory is included.");
 }
 
 let _handler: any | null = null;
