@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 function sanitizeEnv(v?: string | null) {
@@ -29,7 +28,7 @@ function getAnonClientWithToken(token: string) {
   if (!url || !anon) return null as any;
   return createClient(url, anon, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` }, fetch: createFetchWithTimeout(7000) } as any });
 }
-async function ensureAdmin(req: VercelRequest, res: VercelResponse) {
+async function ensureAdmin(req: any, res: any) {
   const auth = (req.headers?.authorization as string) || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
   if (!token) return res.status(401).json({ error: 'Não autorizado: token não fornecido.' });
@@ -48,7 +47,7 @@ async function ensureAdmin(req: VercelRequest, res: VercelResponse) {
   return { admin, db } as const;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   const ctx = await ensureAdmin(req, res) as any;
   if (!ctx) return;
   const db = ctx.db;
@@ -58,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let lastById = new Map<string, string | null>();
   if (ctx.admin) {
     try {
-      const { data: usersResp } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 200 } as any);
+      const { data: usersResp } = await (ctx.admin as any).auth?.admin.listUsers({ page: 1, perPage: 200 } as any);
       const users = (usersResp as any)?.users || [];
       for (const u of users) {
         const last = u?.last_sign_in_at || u?.created_at || null;
