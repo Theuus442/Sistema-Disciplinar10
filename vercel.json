@@ -6,7 +6,7 @@
     "api/**": {
       "runtime": "nodejs22.x",
       "maxDuration": 60,
-      "includeFiles": ["dist/server/**"]
+      "includeFiles": "dist/server/**"
     }
   },
   "routes": [
