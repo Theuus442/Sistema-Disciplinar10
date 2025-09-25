@@ -1,11 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 function sanitizeEnv(v?: string | null) { if (!v) return undefined as any; const t=v.trim().replace(/^['"]|['"]$/g, ""); if(!t||t.toLowerCase()==='undefined'||t.toLowerCase()==='null') return undefined as any; return t; }
 function createFetchWithTimeout(defaultMs=7000){ return async (input:any, init?:any)=>{ const controller=new AbortController(); const id=setTimeout(()=>controller.abort(new Error('fetch timeout') as any), init?.timeout ?? defaultMs); try{ const res=await fetch(input,{...init, signal:controller.signal}); return res as any; } finally{ clearTimeout(id); } }; }
 function getAdminClient(){ const url=sanitizeEnv(process.env.VITE_SUPABASE_URL||process.env.SUPABASE_URL); const serviceKey=sanitizeEnv(process.env.SUPABASE_SERVICE_ROLE_KEY); if(!url||!serviceKey) return null; return createClient(url, serviceKey, { auth:{ persistSession:false }, global:{ fetch: createFetchWithTimeout(8000) } as any }); }
 
-export default async function handler(_req: VercelRequest, res: VercelResponse){
+export default async function handler(_req: any, res: any){
   const admin = getAdminClient();
   if (!admin) return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY ausente no servidor' });
 

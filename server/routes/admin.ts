@@ -728,10 +728,13 @@ async function selectUserOverridesFlexible(db: any, userId: string): Promise<Use
     try {
       const { data, error } = await fn();
       if (!error && Array.isArray(data)) {
-        return (data as any[]).map((r: any) => ({
-          permission_name: r.permission_name || r.permission,
-          action: (r.action || '').toLowerCase() === 'revoke' ? 'revoke' : 'grant',
-        })).filter((r) => r.permission_name);
+        return (data as any[]).map((r: any) => {
+          const action: 'grant' | 'revoke' = ((r.action || '').toLowerCase() === 'revoke' ? 'revoke' : 'grant');
+          return {
+            permission_name: r.permission_name || r.permission,
+            action,
+          } as UserOverride;
+        }).filter((r) => r.permission_name);
       }
     } catch {}
   }
