@@ -5,8 +5,7 @@
   "regions": ["gru1"],
   "functions": {
     "api/**": {
-      "maxDuration": 60,
-      "includeFiles": "dist/server/**"
+      "maxDuration": 60
     }
   },
   "rewrites": [
