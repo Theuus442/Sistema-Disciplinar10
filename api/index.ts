@@ -12,7 +12,7 @@ async function loadCreateServer(): Promise<() => any> {
     path.join(process.cwd(), "dist/server/server.mjs"),
     process.env.LAMBDA_TASK_ROOT ? path.join(process.env.LAMBDA_TASK_ROOT, "dist/server/server.mjs") : "",
     path.join("/var/task", "dist/server/server.mjs"),
-  ].filter(Boolean as any);
+  ].filter((p): p is string => !!p);
   for (const p of candidates) {
     try {
       const mod = await import(pathToFileURL(p).href);
