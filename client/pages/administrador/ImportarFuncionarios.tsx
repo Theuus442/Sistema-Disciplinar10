@@ -32,7 +32,7 @@ export default function ImportarFuncionariosPage() {
     try {
       const res = await fetch('/api/admin/import-employees', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ csv: fileText }),
       });
       const body = await res.json();
