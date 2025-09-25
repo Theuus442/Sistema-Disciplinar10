@@ -7,6 +7,7 @@ async function loadCreateServer(): Promise<() => any> {
   const candidates = [
     path.join(__dirname, "../dist/server/server.mjs"),
     path.join(__dirname, "../../dist/server/server.mjs"),
+    path.join(process.cwd(), "dist/server/server.mjs"),
   ];
   for (const p of candidates) {
     try {
@@ -14,8 +15,7 @@ async function loadCreateServer(): Promise<() => any> {
       if (mod && typeof mod.createServer === "function") return mod.createServer as any;
     } catch {}
   }
-  const mod = await import("../server/index");
-  return (mod as any).createServer as any;
+  throw new Error("dist/server/server.mjs not found in function bundle. Ensure buildCommand 'pnpm build' runs and vercel.json includes includeFiles: 'dist/server/**'.");
 }
 
 let _handler: any | null = null;
