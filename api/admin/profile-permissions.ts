@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 function sanitizeEnv(v?: string | null) {
   if (!v) return undefined as any;
