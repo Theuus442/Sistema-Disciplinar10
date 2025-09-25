@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import SidebarAdministrador from '@/components/SidebarAdministrador';
+import { authHeaders } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +32,7 @@ export default function ImportarFuncionariosPage() {
     try {
       const res = await fetch('/api/admin/import-employees', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ csv: fileText }),
       });
       const body = await res.json();
