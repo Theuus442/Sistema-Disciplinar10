@@ -844,26 +844,51 @@ export const getUserOverrides: RequestHandler = async (req, res) => {
 };
 
 export const saveUserOverrides: RequestHandler = async (req, res) => {
+  if ((req.method || '').toUpperCase() !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido.' });
+  }
   try {
-    const ctx = await ensureAdmin(req, res);
-    if (!ctx) return;
-    const db = ctx.db;
-    const userId = String(req.params.userId || '').trim();
-    if (!userId) return res.status(400).json({ error: 'userId required' });
-    const body = (req.body as any) || {};
-    const overrides = Array.isArray(body?.overrides) ? (body.overrides as UserOverride[]) : [];
-    for (const o of overrides) {
-      const hasName = typeof (o as any)?.permission_name === 'string' && (o as any).permission_name.trim() !== '';
-      const hasId = typeof (o as any)?.permission_id !== 'undefined' && (o as any).permission_id !== null && String((o as any).permission_id).trim() !== '';
-      if (!hasName && !hasId) return res.status(400).json({ error: 'Invalid override item: permission_name or permission_id required' });
-      if (o.action !== 'grant' && o.action !== 'revoke') return res.status(400).json({ error: 'Invalid override item: action must be grant or revoke' });
+    const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
+    const serviceKey = sanitizeEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const supabaseAdmin = createClient(url, serviceKey);
+
+    const auth = String(req.headers.authorization || '');
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
+    if (!token) return res.status(401).json({ error: 'Não autorizado.' });
+
+    const { data: userData } = await (supabaseAdmin as any).auth.getUser(token);
+    const user = (userData as any)?.user || null;
+    if (!user) return res.status(401).json({ error: 'Token inválido.' });
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('perfil')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profile?.perfil !== 'administrador') {
+      return res.status(403).json({ error: 'Acesso proibido.' });
     }
-    const result = await replaceUserOverridesFlexible(db, userId, overrides);
-    if (!result.ok) return res.status(500).json({ error: result.message || 'Falha ao salvar overrides' });
-    if (result.fallback && result.message) return res.status(200).json({ ok: true, warning: result.message });
-    return res.json({ ok: true });
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message || String(e) });
+
+    const userId = String(req.params.userId || (req.query as any)?.userId || '').trim();
+    const overrides = Array.isArray((req.body as any)?.overrides) ? (req.body as any).overrides : null;
+    if (!userId || !Array.isArray(overrides)) {
+      return res.status(400).json({ error: 'Dados de entrada inválidos.' });
+    }
+
+    await supabaseAdmin.from('user_permission_overrides').delete().eq('user_id', userId);
+
+    if (overrides.length > 0) {
+      const dataToInsert = overrides.map((o: any) => ({
+        user_id: userId,
+        permission_id: o.permission_id,
+        action: o.action,
+      }));
+      await supabaseAdmin.from('user_permission_overrides').insert(dataToInsert as any);
+    }
+
+    return res.status(200).json({ message: 'Permissões do usuário atualizadas com sucesso!' });
+  } catch (error: any) {
+    return res.status(500).json({ error: 'Erro interno do servidor: ' + (error?.message || String(error)) });
   }
 };
 
