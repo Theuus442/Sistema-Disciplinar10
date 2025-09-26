@@ -830,21 +830,66 @@ async function replaceUserOverridesFlexible(db: any, userId: string, overrides: 
 }
 
 export const getUserOverrides: RequestHandler = async (req, res) => {
-  console.log('EXECUTANDO A VERSÃO DE TESTE DEPLOYED EM: 25 de Setembro, 21:35');
-  res.status(200).json({
-    ok: true,
-    message: "DEPLOYMENT BEM-SUCEDIDO. Esta é a versão de teste de 25/09.",
-    warning: null
-  });
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const db = ctx.db;
+    const userId = String(req.params.userId || '').trim();
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const list = await selectUserOverridesFlexible(db, userId);
+    return res.json(list);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
 };
 
 export const saveUserOverrides: RequestHandler = async (req, res) => {
-  console.log('EXECUTANDO A VERSÃO DE TESTE DEPLOYED EM: 25 de Setembro, 21:35');
-  res.status(200).json({
-    ok: true,
-    message: "DEPLOYMENT BEM-SUCEDIDO. Esta é a versão de teste de 25/09.",
-    warning: null
-  });
+  if ((req.method || '').toUpperCase() !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido.' });
+  }
+  try {
+    const url = sanitizeEnv(process.env.SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL);
+    const serviceKey = sanitizeEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const supabaseAdmin = createClient(url, serviceKey);
+
+    const auth = String(req.headers.authorization || '');
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
+    if (!token) return res.status(401).json({ error: 'Não autorizado.' });
+
+    const { data: userData } = await (supabaseAdmin as any).auth.getUser(token);
+    const user = (userData as any)?.user || null;
+    if (!user) return res.status(401).json({ error: 'Token inválido.' });
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('perfil')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profile?.perfil !== 'administrador') {
+      return res.status(403).json({ error: 'Acesso proibido.' });
+    }
+
+    const userId = String(req.params.userId || (req.query as any)?.userId || '').trim();
+    const overrides = Array.isArray((req.body as any)?.overrides) ? (req.body as any).overrides : null;
+    if (!userId || !Array.isArray(overrides)) {
+      return res.status(400).json({ error: 'Dados de entrada inválidos.' });
+    }
+
+    await supabaseAdmin.from('user_permission_overrides').delete().eq('user_id', userId);
+
+    if (overrides.length > 0) {
+      const dataToInsert = overrides.map((o: any) => ({
+        user_id: userId,
+        permission_id: o.permission_id,
+        action: o.action,
+      }));
+      await supabaseAdmin.from('user_permission_overrides').insert(dataToInsert as any);
+    }
+
+    return res.status(200).json({ message: 'Permissões do usuário atualizadas com sucesso!' });
+  } catch (error: any) {
+    return res.status(500).json({ error: 'Erro interno do servidor: ' + (error?.message || String(error)) });
+  }
 };
 
 // ------------------------- Import employees (CSV) -------------------------
