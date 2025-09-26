@@ -830,41 +830,21 @@ async function replaceUserOverridesFlexible(db: any, userId: string, overrides: 
 }
 
 export const getUserOverrides: RequestHandler = async (req, res) => {
-  try {
-    const ctx = await ensureAdmin(req, res);
-    if (!ctx) return;
-    const db = ctx.db;
-    const userId = String(req.params.userId || '').trim();
-    if (!userId) return res.status(400).json({ error: 'userId required' });
-    const list = await selectUserOverridesFlexible(db, userId);
-    return res.json(list);
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message || String(e) });
-  }
+  console.log('EXECUTANDO A VERSÃO DE TESTE DEPLOYED EM: 25 de Setembro, 21:35');
+  res.status(200).json({
+    ok: true,
+    message: "DEPLOYMENT BEM-SUCEDIDO. Esta é a versão de teste de 25/09.",
+    warning: null
+  });
 };
 
 export const saveUserOverrides: RequestHandler = async (req, res) => {
-  try {
-    const ctx = await ensureAdmin(req, res);
-    if (!ctx) return;
-    const db = ctx.db;
-    const userId = String(req.params.userId || '').trim();
-    if (!userId) return res.status(400).json({ error: 'userId required' });
-    const body = (req.body as any) || {};
-    const overrides = Array.isArray(body?.overrides) ? (body.overrides as UserOverride[]) : [];
-    for (const o of overrides) {
-      const hasName = typeof (o as any)?.permission_name === 'string' && (o as any).permission_name.trim() !== '';
-      const hasId = typeof (o as any)?.permission_id !== 'undefined' && (o as any).permission_id !== null && String((o as any).permission_id).trim() !== '';
-      if (!hasName && !hasId) return res.status(400).json({ error: 'Invalid override item: permission_name or permission_id required' });
-      if (o.action !== 'grant' && o.action !== 'revoke') return res.status(400).json({ error: 'Invalid override item: action must be grant or revoke' });
-    }
-    const result = await replaceUserOverridesFlexible(db, userId, overrides);
-    if (!result.ok) return res.status(500).json({ error: result.message || 'Falha ao salvar overrides' });
-    if (result.fallback && result.message) return res.status(200).json({ ok: true, warning: result.message });
-    return res.json({ ok: true });
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message || String(e) });
-  }
+  console.log('EXECUTANDO A VERSÃO DE TESTE DEPLOYED EM: 25 de Setembro, 21:35');
+  res.status(200).json({
+    ok: true,
+    message: "DEPLOYMENT BEM-SUCEDIDO. Esta é a versão de teste de 25/09.",
+    warning: null
+  });
 };
 
 // ------------------------- Import employees (CSV) -------------------------
