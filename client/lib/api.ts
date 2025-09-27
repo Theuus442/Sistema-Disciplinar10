@@ -126,9 +126,11 @@ export async function fetchUsers() {
 }
 
 export type PerfilUsuario = "administrador" | "gestor" | "juridico" | "funcionario";
-export async function updateProfile(id: string, patch: { nome?: string; perfil?: PerfilUsuario; ativo?: boolean }) {
-  const { error } = await supabase.from("profiles").update(patch as any).eq("id", id);
-  if (error) throw error;
+export async function updateUser(id: string, patch: { nome?: string; perfil?: PerfilUsuario; ativo?: boolean; email?: string }) {
+  await api(`/api/admin/users/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
 }
 
 export async function updateProcess(id: string, patch: Partial<ProcessoAPI>) {
