@@ -242,6 +242,11 @@ export async function fetchUserOverrides(userId: string): Promise<UserOverride[]
 }
 
 export async function saveUserOverrides(userId: string, overrides: UserOverride[]): Promise<void> {
+  try {
+    // Debug log to inspect payload being sent
+    // eslint-disable-next-line no-console
+    console.log('Array de "overrides" sendo enviado para a API:', overrides);
+  } catch {}
   await api(`/api/admin/user-overrides/${encodeURIComponent(userId)}`, {
     method: "POST",
     body: JSON.stringify({ overrides }),
