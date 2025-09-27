@@ -907,6 +907,51 @@ export const saveUserOverrides: RequestHandler = async (req, res) => {
   }
 };
 
+// ------------------------- Users update -------------------------
+
+export const updateUserProfile: RequestHandler = async (req, res) => {
+  try {
+    const ctx = await ensureAdmin(req, res);
+    if (!ctx) return;
+    const admin = ctx.admin;
+    const db = ctx.db;
+
+    const userId = String((req.params as any)?.userId || (req.params as any)?.id || '').trim();
+    if (!userId) return res.status(400).json({ error: 'userId path param required' });
+
+    const body = req.body as any;
+    const patch: any = {};
+    if (typeof body?.nome === 'string') patch.nome = body.nome;
+    if (typeof body?.perfil === 'string') patch.perfil = body.perfil;
+    if (typeof body?.ativo === 'boolean') patch.ativo = body.ativo;
+
+    if (Object.keys(patch).length === 0 && typeof body?.email !== 'string') {
+      return res.status(400).json({ error: 'Nada para atualizar.' });
+    }
+
+    if (Object.keys(patch).length > 0) {
+      const { error: updErr } = await db.from('profiles').update(patch).eq('id', userId);
+      if (updErr) return res.status(400).json({ error: updErr.message || String(updErr) });
+    }
+
+    if (typeof body?.email === 'string' && admin) {
+      try {
+        // @ts-ignore supabase admin typings in this environment
+        const { error: uErr } = await (admin.auth as any).admin.updateUserById(userId, { email: body.email });
+        if (uErr) {
+          console.warn('Falha ao atualizar e-mail do auth user:', uErr);
+        }
+      } catch (e) {
+        console.warn('Exceção ao atualizar e-mail do auth user:', e);
+      }
+    }
+
+    return res.json({ ok: true });
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+};
+
 // ------------------------- Import employees (CSV) -------------------------
 
 function parseCsvToObjects(csvText: string) {
