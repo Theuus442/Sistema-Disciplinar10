@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile, type PerfilUsuario, authHeaders, fetchAvailablePermissions, fetchProfilePermissions, fetchUserOverrides, saveUserOverrides, type UserOverride } from "@/lib/api";
+import { updateUser, type PerfilUsuario, authHeaders, fetchAvailablePermissions, fetchProfilePermissions, fetchUserOverrides, saveUserOverrides, type UserOverride } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { errorMessage } from "@/lib/utils";
 
