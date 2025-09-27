@@ -885,15 +885,27 @@ export const saveUserOverrides: RequestHandler = async (req, res) => {
     }
 
     if (overrides.length > 0) {
-      const dataToInsert = overrides.map((o: any) => ({
-        user_id: userId,
-        permission_id: o.permission_id,
-        action: o.action,
-      }));
+      const rows: any[] = [];
+      for (const o of overrides as any[]) {
+        let pid = (o as any).permission_id ?? null;
+        if (!pid) {
+          const pname = (o as any).permission_name || (o as any).permission;
+          if (typeof pname === 'string' && pname.trim() !== '') {
+            try {
+              const rid = await findPermissionId(supabaseAdmin, pname);
+              if (rid) pid = rid;
+            } catch {}
+          }
+        }
+        if (!pid) {
+          throw new Error(`permission_id ausente e não resolvível para '${(o as any).permission_name || (o as any).permission || ''}'`);
+        }
+        rows.push({ user_id: userId, permission_id: pid, action: (o as any).action });
+      }
 
       const { error: insertError } = await supabaseAdmin
         .from('user_permission_overrides')
-        .insert(dataToInsert as any);
+        .insert(rows as any);
       if (insertError) {
         console.error('Erro ao inserir novas permissões:', insertError);
         throw insertError;
