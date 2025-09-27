@@ -875,7 +875,14 @@ export const saveUserOverrides: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Dados de entrada inválidos.' });
     }
 
-    await supabaseAdmin.from('user_permission_overrides').delete().eq('user_id', userId);
+    const { error: deleteError } = await supabaseAdmin
+      .from('user_permission_overrides')
+      .delete()
+      .eq('user_id', userId);
+    if (deleteError) {
+      console.error('Erro ao deletar permissões antigas:', deleteError);
+      throw deleteError;
+    }
 
     if (overrides.length > 0) {
       const dataToInsert = overrides.map((o: any) => ({
@@ -883,12 +890,20 @@ export const saveUserOverrides: RequestHandler = async (req, res) => {
         permission_id: o.permission_id,
         action: o.action,
       }));
-      await supabaseAdmin.from('user_permission_overrides').insert(dataToInsert as any);
+
+      const { error: insertError } = await supabaseAdmin
+        .from('user_permission_overrides')
+        .insert(dataToInsert as any);
+      if (insertError) {
+        console.error('Erro ao inserir novas permissões:', insertError);
+        throw insertError;
+      }
     }
 
     return res.status(200).json({ message: 'Permissões do usuário atualizadas com sucesso!' });
   } catch (error: any) {
-    return res.status(500).json({ error: 'Erro interno do servidor: ' + (error?.message || String(error)) });
+    console.error('ERRO REAL DO SUPABASE:', error);
+    return res.status(500).json({ error: 'Erro ao salvar no banco de dados: ' + (error?.message || String(error)) });
   }
 };
 
