@@ -125,7 +125,7 @@ export default function UsuariosAdminPage() {
     const old = usuarios;
     setUsuarios((prev) => prev.map((u) => (u.id === id ? { ...u, ativo } : u)));
     try {
-      await updateProfile(id, { ativo });
+      await updateUser(id, { ativo });
       toast({ title: ativo ? "Usuário ativado" : "Usuário desativado" });
     } catch (e: any) {
       setUsuarios(old);
@@ -202,7 +202,7 @@ export default function UsuariosAdminPage() {
     const old = usuarios;
     setUsuarios((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
     try {
-      await updateProfile(id, patch);
+      await updateUser(id, patch);
       const overrides: UserOverride[] = Object.entries(overrideMap)
         .filter(([_, v]) => v === "grant" || v === "revoke")
         .map(([permission_name, v]) => ({ permission_name, action: v as any }));
